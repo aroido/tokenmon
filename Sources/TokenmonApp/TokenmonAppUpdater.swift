@@ -350,10 +350,15 @@ final class TokenmonAppUpdater: NSObject, ObservableObject {
     let availability: TokenmonAppUpdaterAvailability.State
 
     private let analyticsBridge: TokenmonAppUpdaterAnalyticsBridge
+    private let notificationBridge: TokenmonAppUpdateNotificationBridge
     private var updaterController: SPUStandardUpdaterController?
     private var canCheckObservation: NSKeyValueObservation?
 
-    init(analyticsTracker: TokenmonAnalyticsTracking = TokenmonNoopAnalyticsTracker()) {
+    init(
+        settingsProvider: @escaping @MainActor () -> AppSettings = { AppSettings() },
+        notificationCoordinator: TokenmonCaptureNotificationCoordinating = TokenmonNoopCaptureNotificationCoordinator(),
+        analyticsTracker: TokenmonAnalyticsTracking = TokenmonNoopAnalyticsTracker()
+    ) {
         let diagnosticsSnapshot = TokenmonAppUpdaterDiagnosticsSnapshot.resolve()
         self.diagnosticsSnapshot = diagnosticsSnapshot
         availability = diagnosticsSnapshot.availability
@@ -362,6 +367,10 @@ final class TokenmonAppUpdater: NSObject, ObservableObject {
             feedSourceProvider: {
                 diagnosticsSnapshot.feedURLSource?.developerDescription
             }
+        )
+        notificationBridge = TokenmonAppUpdateNotificationBridge(
+            settingsProvider: settingsProvider,
+            notificationCoordinator: notificationCoordinator
         )
 
         super.init()
@@ -546,17 +555,70 @@ final class TokenmonAppUpdaterAnalyticsBridge {
     }
 }
 
+@MainActor
+final class TokenmonAppUpdateNotificationBridge {
+    private let settingsProvider: () -> AppSettings
+    private let notificationCoordinator: TokenmonCaptureNotificationCoordinating
+    private var automaticUpdateCheckInProgress = false
+    private var lastNotifiedVersion: String?
+
+    init(
+        settingsProvider: @escaping () -> AppSettings,
+        notificationCoordinator: TokenmonCaptureNotificationCoordinating
+    ) {
+        self.settingsProvider = settingsProvider
+        self.notificationCoordinator = notificationCoordinator
+    }
+
+    func beginUpdateCheck(_ updateCheck: SPUUpdateCheck) {
+        automaticUpdateCheckInProgress = updateCheck != .updates
+    }
+
+    func handleUpdateAvailable(version: String?) {
+        guard automaticUpdateCheckInProgress else {
+            return
+        }
+
+        let settings = settingsProvider()
+        guard settings.updateNotificationsEnabled else {
+            return
+        }
+
+        guard let version, version.isEmpty == false else {
+            return
+        }
+
+        guard lastNotifiedVersion != version else {
+            return
+        }
+
+        notificationCoordinator.sendUpdateAvailableNotification(version: version) { [weak self] scheduled in
+            guard scheduled else {
+                return
+            }
+
+            self?.lastNotifiedVersion = version
+        }
+    }
+
+    func finishUpdateCheck() {
+        automaticUpdateCheckInProgress = false
+    }
+}
+
 extension TokenmonAppUpdater: SPUUpdaterDelegate {
     func updater(_ updater: SPUUpdater, mayPerformUpdateCheck updateCheck: SPUUpdateCheck, error: AutoreleasingUnsafeMutablePointer<NSError?>) -> Bool {
         _ = updater
         _ = error
         analyticsBridge.beginUpdateCheck(updateCheck)
+        notificationBridge.beginUpdateCheck(updateCheck)
         return true
     }
 
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         _ = updater
         analyticsBridge.captureUpdateAvailable(version: item.displayVersionString)
+        notificationBridge.handleUpdateAvailable(version: item.displayVersionString)
     }
 
     func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
@@ -584,6 +646,7 @@ extension TokenmonAppUpdater: SPUUpdaterDelegate {
         _ = updater
         _ = error
         analyticsBridge.setManualUpdateCheckInProgress(false)
+        notificationBridge.finishUpdateCheck()
     }
 
     func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: Error?) {
@@ -591,5 +654,6 @@ extension TokenmonAppUpdater: SPUUpdaterDelegate {
         _ = updateCheck
         _ = error
         analyticsBridge.setManualUpdateCheckInProgress(false)
+        notificationBridge.finishUpdateCheck()
     }
 }

@@ -4047,6 +4047,8 @@ struct TokenmonPresentationTests {
         }
 
         private(set) var previewRequests: [PreviewRequest] = []
+        private(set) var capturePreferenceChanges: [Bool] = []
+        private(set) var updatePreferenceChanges: [Bool] = []
         var authorizationState: TokenmonNotificationAuthorizationState = .unknown
 
         func start() {}
@@ -4082,11 +4084,104 @@ struct TokenmonPresentationTests {
         }
 
         func notificationsPreferenceDidChange(
-            isEnabled _: Bool,
+            isEnabled: Bool,
             completion: @escaping @MainActor (String?, String?) -> Void
         ) {
+            capturePreferenceChanges.append(isEnabled)
             completion(nil, nil)
         }
+
+        func updateNotificationsPreferenceDidChange(
+            isEnabled: Bool,
+            completion: @escaping @MainActor (String?, String?) -> Void
+        ) {
+            updatePreferenceChanges.append(isEnabled)
+            completion(nil, nil)
+        }
+
+        func sendUpdateAvailableNotification(
+            version _: String,
+            completion: (@MainActor @Sendable (Bool) -> Void)?
+        ) {
+            completion?(false)
+        }
+    }
+
+    @Test
+    func updateReadyAlertsDefaultToOffInSettingsPersistence() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let databasePath = directory.appendingPathComponent("tokenmon.sqlite").path
+        let manager = TokenmonDatabaseManager(path: databasePath)
+        try manager.bootstrap()
+
+        let model = TokenmonMenuModel(
+            databasePath: databasePath,
+            providerInspector: { _, _, _ in [] },
+            launchAtLoginStateProvider: { .unsupported(reason: "tests") }
+        )
+
+        await model.waitForRefreshToFinish()
+
+        #expect(model.appSettings.updateNotificationsEnabled == false)
+        #expect(try manager.appSettings().updateNotificationsEnabled == false)
+    }
+
+    @Test
+    func enablingUpdateReadyAlertsPersistsPreferenceAndRequestsAuthorization() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let databasePath = directory.appendingPathComponent("tokenmon.sqlite").path
+        let manager = TokenmonDatabaseManager(path: databasePath)
+        try manager.bootstrap()
+
+        let coordinator = CaptureNotificationCoordinatorSpy()
+        coordinator.authorizationState = .authorized(alertsEnabled: true, soundsEnabled: true, alertStyle: 1)
+
+        let model = TokenmonMenuModel(
+            databasePath: databasePath,
+            providerInspector: { _, _, _ in [] },
+            launchAtLoginStateProvider: { .unsupported(reason: "tests") },
+            notificationCoordinator: coordinator
+        )
+
+        await model.waitForRefreshToFinish()
+        model.updateUpdateNotificationsEnabled(true)
+
+        #expect(model.appSettings.updateNotificationsEnabled)
+        #expect(try manager.appSettings().updateNotificationsEnabled)
+        #expect(coordinator.updatePreferenceChanges == [true])
+    }
+
+    @Test
+    func disablingUpdateReadyAlertsPersistsWithoutPrompting() async throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let databasePath = directory.appendingPathComponent("tokenmon.sqlite").path
+        let manager = TokenmonDatabaseManager(path: databasePath)
+        try manager.bootstrap()
+
+        var settings = try manager.appSettings()
+        settings.updateNotificationsEnabled = true
+        try manager.saveAppSettings(settings)
+
+        let coordinator = CaptureNotificationCoordinatorSpy()
+        let model = TokenmonMenuModel(
+            databasePath: databasePath,
+            providerInspector: { _, _, _ in [] },
+            launchAtLoginStateProvider: { .unsupported(reason: "tests") },
+            notificationCoordinator: coordinator
+        )
+
+        await model.waitForRefreshToFinish()
+        model.updateUpdateNotificationsEnabled(false)
+
+        #expect(model.appSettings.updateNotificationsEnabled == false)
+        #expect(try manager.appSettings().updateNotificationsEnabled == false)
+        #expect(coordinator.updatePreferenceChanges.isEmpty)
     }
 
     @Test

@@ -830,6 +830,7 @@ struct TokenmonSettingsPanel: View {
                     onUpdateFieldBackplateEnabled: model.updateFieldBackplateEnabled,
                     onUpdateNotificationsEnabled: model.updateNotificationsEnabled,
                     onRequestNotificationPermission: model.requestCaptureNotificationPermission,
+                    onUpdateUpdateNotificationsEnabled: model.updateUpdateNotificationsEnabled,
                     onUpdateUsageAnalyticsEnabled: model.updateUsageAnalyticsEnabled,
                     onOpenSystemNotificationSettings: model.openSystemNotificationSettings,
                     onOpenWelcomeGuide: onOpenWelcomeGuide
@@ -988,6 +989,7 @@ struct TokenmonGeneralSettingsPane: View {
     let onUpdateFieldBackplateEnabled: (Bool) -> Void
     let onUpdateNotificationsEnabled: (Bool) -> Void
     let onRequestNotificationPermission: () -> Void
+    let onUpdateUpdateNotificationsEnabled: (Bool) -> Void
     let onUpdateUsageAnalyticsEnabled: (Bool) -> Void
     let onOpenSystemNotificationSettings: () -> Void
     let onOpenWelcomeGuide: () -> Void
@@ -1170,7 +1172,13 @@ struct TokenmonGeneralSettingsPane: View {
                 }
 
                 TokenmonSettingsSectionCard(title: TokenmonL10n.string("settings.general.section.updates"), systemImage: "arrow.down.circle") {
-                    TokenmonAppUpdateSettingsView(appUpdater: appUpdater)
+                    TokenmonAppUpdateSettingsView(
+                        appUpdater: appUpdater,
+                        appSettings: appSettings,
+                        notificationAuthorizationState: notificationAuthorizationState,
+                        onUpdateUpdateNotificationsEnabled: onUpdateUpdateNotificationsEnabled,
+                        onOpenSystemNotificationSettings: onOpenSystemNotificationSettings
+                    )
                 }
 
                 TokenmonSettingsSectionCard(title: TokenmonL10n.string("settings.general.section.about"), systemImage: "info.circle") {
@@ -1264,11 +1272,25 @@ struct TokenmonGeneralSettingsPane: View {
 
 private struct TokenmonAppUpdateSettingsView: View {
     @ObservedObject var appUpdater: TokenmonAppUpdater
+    let appSettings: AppSettings
+    let notificationAuthorizationState: TokenmonNotificationAuthorizationState
+    let onUpdateUpdateNotificationsEnabled: (Bool) -> Void
+    let onOpenSystemNotificationSettings: () -> Void
     @State private var automaticallyChecksForUpdates: Bool
     @State private var automaticallyDownloadsUpdates: Bool
 
-    init(appUpdater: TokenmonAppUpdater) {
+    init(
+        appUpdater: TokenmonAppUpdater,
+        appSettings: AppSettings,
+        notificationAuthorizationState: TokenmonNotificationAuthorizationState,
+        onUpdateUpdateNotificationsEnabled: @escaping (Bool) -> Void,
+        onOpenSystemNotificationSettings: @escaping () -> Void
+    ) {
         self.appUpdater = appUpdater
+        self.appSettings = appSettings
+        self.notificationAuthorizationState = notificationAuthorizationState
+        self.onUpdateUpdateNotificationsEnabled = onUpdateUpdateNotificationsEnabled
+        self.onOpenSystemNotificationSettings = onOpenSystemNotificationSettings
         _automaticallyChecksForUpdates = State(initialValue: appUpdater.automaticallyChecksForUpdates)
         _automaticallyDownloadsUpdates = State(initialValue: appUpdater.automaticallyDownloadsUpdates)
     }
@@ -1300,6 +1322,31 @@ private struct TokenmonAppUpdateSettingsView: View {
                 .disabled(automaticallyChecksForUpdates == false)
                 .onChange(of: automaticallyDownloadsUpdates) { _, newValue in
                     appUpdater.setAutomaticallyDownloadsUpdates(newValue)
+                }
+
+                Toggle(
+                    TokenmonL10n.string("settings.updates.toggle.notify_when_ready"),
+                    isOn: Binding(
+                        get: { appSettings.updateNotificationsEnabled },
+                        set: { newValue in
+                            onUpdateUpdateNotificationsEnabled(newValue)
+                        }
+                    )
+                )
+
+                if appSettings.updateNotificationsEnabled {
+                    TokenmonSettingsStatusRow(
+                        text: TokenmonSetupRecommendationsBuilder.notificationAuthorizationDetail(notificationAuthorizationState),
+                        systemImage: TokenmonSetupRecommendationsBuilder.notificationAuthorizationSymbol(notificationAuthorizationState),
+                        tint: TokenmonSetupRecommendationsBuilder.notificationAuthorizationTint(notificationAuthorizationState).color
+                    )
+
+                    if case .denied = notificationAuthorizationState {
+                        Button(TokenmonL10n.string("settings.general.open_notification_settings")) {
+                            onOpenSystemNotificationSettings()
+                        }
+                        .tokenmonAdaptiveButtonStyle()
+                    }
                 }
             } else if let reasonKey = appUpdater.unavailabilityReasonKey {
                 TokenmonSettingsStatusRow(

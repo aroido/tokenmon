@@ -30,12 +30,13 @@
 "settings.updates.action.check_now" = "Check for Updates…";
 "settings.updates.toggle.automatically_check" = "Automatically check for updates";
 "settings.updates.toggle.automatically_download" = "Download updates in the background";
+"settings.updates.toggle.notify_when_ready" = "Notify when an update is ready";
 "settings.updates.feed" = "Update feed: %1$@";
 "settings.updates.feed_source" = "Feed source: %1$@";
 "settings.updates.public_key_source" = "Signing key source: %1$@";
 "settings.updates.override_file" = "Local override file: %1$@";
 "settings.updates.override_active" = "A non-default Sparkle update configuration is active for this app.";
-"settings.updates.note" = "Tokenmon uses Sparkle to check a signed release feed and propose notarized app updates. The Homebrew cask is marked to allow in-app updates too.";
+"settings.updates.note" = "Tokenmon uses Sparkle to check a signed release feed and propose notarized app updates. The Homebrew cask is marked to allow in-app updates too. If you enable update-ready alerts, Tokenmon uses the same macOS notification permission as capture alerts and opens the native update prompt when you click the alert.";
 "settings.updates.source.bundle_metadata" = "Bundled release metadata";
 "settings.updates.source.local_override_file" = "Local override file";
 "settings.updates.source.process_environment" = "Process environment";
@@ -195,7 +196,7 @@
 "settings.general.section.notifications" = "Notifications";
 "settings.general.toggle.notify_on_capture" = "Notify on capture";
 "settings.general.open_notification_settings" = "Open macOS Notification Settings";
-"settings.general.notifications.note" = "Turn this on to ask macOS for notification permission. Tokenmon only notifies on captures, and opening a notification jumps into the matching Dex entry.";
+"settings.general.notifications.note" = "Turn this on to ask macOS for notification permission. Tokenmon uses that permission for capture alerts and optional update-ready alerts. Capture alerts still only fire for successful captures, and opening one jumps into the matching Dex entry.";
 "settings.general.section.about" = "About";
 "settings.general.about.local_build" = "Local build";
 "settings.general.about.note" = "Developer tools stay in a separate hidden in-app window so everyday settings stay lightweight.";
@@ -222,6 +223,8 @@
 "settings.feedback.failed_notification_settings" = "Couldn't open macOS Notification Settings.";
 "settings.feedback.capture_notifications_enabled" = "Capture alerts are on. Tokenmon only notifies when a species is captured.";
 "settings.feedback.capture_notifications_denied" = "Tokenmon notifications are disabled in macOS. Open Notification Settings to allow capture alerts.";
+"settings.feedback.update_notifications_enabled" = "Update-ready alerts are on. Tokenmon can show a macOS banner when a new version is available.";
+"settings.feedback.update_notifications_denied" = "Tokenmon notifications are disabled in macOS. Open Notification Settings to allow update-ready alerts.";
 "settings.feedback.preview_alert_missing_species" = "Couldn't find species %1$@ for the notification preview.";
 "settings.feedback.preview_alert_notifications_unavailable" = "Tokenmon notifications are disabled in macOS. Enable them in Settings before previewing capture alerts.";
 "settings.feedback.preview_alert_scheduled" = "Capture alert preview scheduled. Tokenmon will briefly move to the background so the macOS banner can appear.";
@@ -260,6 +263,9 @@
 "onboarding.setup.status.checking" = "Checking";
 "onboarding.setup.notifications.optional" = "Turn this on if you want a macOS alert only when a species is captured.";
 "onboarding.setup.notifications.ready" = "Capture alerts are ready whenever Tokenmon catches something new.";
+"update.notification.title" = "Update Ready";
+"update.notification.subtitle" = "Tokenmon %1$@ is available";
+"update.notification.body" = "Click to open the update prompt.";
 "onboarding.setup.ready.title" = "This Mac is already ready";
 "onboarding.setup.ready.body" = "Launch at login and capture alerts already look good here. You can change them any time from General settings.";
 "onboarding.setup.revisit.title" = "You can revisit this later";

@@ -377,6 +377,20 @@ final class TokenmonMenuModel: ObservableObject {
         runNotificationPreferenceFlow(isEnabled: value)
     }
 
+    func updateUpdateNotificationsEnabled(_ value: Bool) {
+        logInfo(
+            category: "settings",
+            event: "update_notifications_preference_changed",
+            metadata: ["enabled": String(value)]
+        )
+        var settings = appSettings
+        settings.updateNotificationsEnabled = value
+        guard persist(settings: settings) else {
+            return
+        }
+        runUpdateNotificationPreferenceFlow(isEnabled: value)
+    }
+
     func updateUsageAnalyticsEnabled(_ value: Bool) {
         let wasEnabled = appSettings.usageAnalyticsEnabled
         var settings = appSettings
@@ -1337,6 +1351,17 @@ final class TokenmonMenuModel: ObservableObject {
 
     private func runNotificationPreferenceFlow(isEnabled: Bool) {
         notificationCoordinator.notificationsPreferenceDidChange(isEnabled: isEnabled) { [weak self] message, error in
+            guard let self else {
+                return
+            }
+            self.settingsMessage = message
+            self.settingsError = error
+            self.refreshNotificationAuthorizationState()
+        }
+    }
+
+    private func runUpdateNotificationPreferenceFlow(isEnabled: Bool) {
+        notificationCoordinator.updateNotificationsPreferenceDidChange(isEnabled: isEnabled) { [weak self] message, error in
             guard let self else {
                 return
             }

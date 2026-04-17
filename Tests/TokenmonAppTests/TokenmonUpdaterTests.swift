@@ -1,6 +1,7 @@
 import Foundation
 import Testing
 @testable import TokenmonApp
+import TokenmonPersistence
 
 struct TokenmonUpdaterTests {
     @Test
@@ -157,9 +158,98 @@ struct TokenmonUpdaterTests {
         #expect(updateEvents.last?.properties["manual_triggered"] == "false")
     }
 
+    @Test
+    @MainActor
+    func updateNotificationBridgeOnlyAlertsForAutomaticChecksAndDeduplicatesVersions() {
+        let coordinator = UpdateNotificationCoordinatorSpy()
+        let bridge = TokenmonAppUpdateNotificationBridge(
+            settingsProvider: { AppSettings(updateNotificationsEnabled: true) },
+            notificationCoordinator: coordinator
+        )
+
+        bridge.beginUpdateCheck(.updates)
+        bridge.handleUpdateAvailable(version: "0.1.12")
+        #expect(coordinator.updateNotificationVersions.isEmpty)
+
+        bridge.beginUpdateCheck(.updatesInBackground)
+        bridge.handleUpdateAvailable(version: "0.1.12")
+        bridge.handleUpdateAvailable(version: "0.1.12")
+        #expect(coordinator.updateNotificationVersions == ["0.1.12"])
+
+        bridge.finishUpdateCheck()
+        bridge.handleUpdateAvailable(version: "0.1.13")
+        #expect(coordinator.updateNotificationVersions == ["0.1.12"])
+    }
+
+    @Test
+    @MainActor
+    func updateNotificationBridgeRespectsDisabledSetting() {
+        let coordinator = UpdateNotificationCoordinatorSpy()
+        let bridge = TokenmonAppUpdateNotificationBridge(
+            settingsProvider: { AppSettings(updateNotificationsEnabled: false) },
+            notificationCoordinator: coordinator
+        )
+
+        bridge.beginUpdateCheck(.updatesInBackground)
+        bridge.handleUpdateAvailable(version: "0.1.12")
+
+        #expect(coordinator.updateNotificationVersions.isEmpty)
+    }
+
     private func temporaryDatabasePath() -> String {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("TokenmonUpdaterTests-\(UUID().uuidString)", isDirectory: true)
         return directory.appendingPathComponent("tokenmon.sqlite").path
+    }
+
+    @MainActor
+    private final class UpdateNotificationCoordinatorSpy: TokenmonCaptureNotificationCoordinating {
+        private(set) var updateNotificationVersions: [String] = []
+
+        func start() {}
+
+        func fetchAuthorizationState(
+            completion: @escaping @MainActor (TokenmonNotificationAuthorizationState) -> Void
+        ) {
+            completion(.authorized(alertsEnabled: true, soundsEnabled: true, alertStyle: 1))
+        }
+
+        func runtimeDidRefresh(
+            from _: TokenmonRuntimeSnapshot,
+            to _: TokenmonRuntimeSnapshot,
+            settings _: AppSettings
+        ) {}
+
+        func sendPreviewCaptureNotification(
+            speciesID _: String,
+            assetKey _: String,
+            speciesName _: String,
+            subtitle _: String,
+            completion: @escaping @MainActor (String?, String?) -> Void
+        ) {
+            completion(nil, nil)
+        }
+
+        func notificationsPreferenceDidChange(
+            isEnabled _: Bool,
+            completion: @escaping @MainActor (String?, String?) -> Void
+        ) {
+            completion(nil, nil)
+        }
+
+        func updateNotificationsPreferenceDidChange(
+            isEnabled _: Bool,
+            completion: @escaping @MainActor (String?, String?) -> Void
+        ) {
+            completion(nil, nil)
+        }
+
+        func sendUpdateAvailableNotification(
+            version: String,
+            completion: (@MainActor @Sendable (Bool) -> Void)?
+        ) {
+            updateNotificationVersions.append(version)
+            completion?(true)
+        }
     }
 }

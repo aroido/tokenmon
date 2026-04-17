@@ -26,6 +26,7 @@ public enum AppLanguagePreference: String, CaseIterable, Codable, Sendable {
 public struct AppSettings: Equatable, Sendable {
     public var launchAtLogin: Bool
     public var notificationsEnabled: Bool
+    public var updateNotificationsEnabled: Bool
     public var firstRunSetupPromptShown: Bool
     public var providerStatusVisibility: Bool
     public var fieldBackplateEnabled: Bool
@@ -37,6 +38,7 @@ public struct AppSettings: Equatable, Sendable {
     public init(
         launchAtLogin: Bool = false,
         notificationsEnabled: Bool = false,
+        updateNotificationsEnabled: Bool = false,
         firstRunSetupPromptShown: Bool = false,
         providerStatusVisibility: Bool = true,
         fieldBackplateEnabled: Bool = true,
@@ -47,6 +49,7 @@ public struct AppSettings: Equatable, Sendable {
     ) {
         self.launchAtLogin = launchAtLogin
         self.notificationsEnabled = notificationsEnabled
+        self.updateNotificationsEnabled = updateNotificationsEnabled
         self.firstRunSetupPromptShown = firstRunSetupPromptShown
         self.providerStatusVisibility = providerStatusVisibility
         self.fieldBackplateEnabled = fieldBackplateEnabled
@@ -81,6 +84,8 @@ public extension TokenmonDatabaseManager {
                 settings.launchAtLogin = try decodeBool(from: row.valueJSON, decoder: decoder)
             case "notifications_enabled":
                 settings.notificationsEnabled = try decodeBool(from: row.valueJSON, decoder: decoder)
+            case "update_notifications_enabled":
+                settings.updateNotificationsEnabled = try decodeBool(from: row.valueJSON, decoder: decoder)
             case "first_run_setup_prompt_shown":
                 settings.firstRunSetupPromptShown = try decodeBool(from: row.valueJSON, decoder: decoder)
             case "provider_status_visibility":
@@ -119,6 +124,12 @@ public extension TokenmonDatabaseManager {
             try upsertSetting(
                 key: "notifications_enabled",
                 encodedValue: try String(decoding: encoder.encode(settings.notificationsEnabled), as: UTF8.self),
+                updatedAt: updatedAt,
+                database: database
+            )
+            try upsertSetting(
+                key: "update_notifications_enabled",
+                encodedValue: try String(decoding: encoder.encode(settings.updateNotificationsEnabled), as: UTF8.self),
                 updatedAt: updatedAt,
                 database: database
             )

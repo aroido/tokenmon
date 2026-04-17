@@ -32,6 +32,14 @@ protocol TokenmonCaptureNotificationCoordinating: AnyObject {
         isEnabled: Bool,
         completion: @escaping @MainActor (_ message: String?, _ error: String?) -> Void
     )
+    func updateNotificationsPreferenceDidChange(
+        isEnabled: Bool,
+        completion: @escaping @MainActor (_ message: String?, _ error: String?) -> Void
+    )
+    func sendUpdateAvailableNotification(
+        version: String,
+        completion: (@MainActor @Sendable (Bool) -> Void)?
+    )
 }
 
 @MainActor
@@ -66,6 +74,20 @@ final class TokenmonNoopCaptureNotificationCoordinator: TokenmonCaptureNotificat
     ) {
         completion(nil, nil)
     }
+
+    func updateNotificationsPreferenceDidChange(
+        isEnabled _: Bool,
+        completion: @escaping @MainActor (_ message: String?, _ error: String?) -> Void
+    ) {
+        completion(nil, nil)
+    }
+
+    func sendUpdateAvailableNotification(
+        version _: String,
+        completion: (@MainActor @Sendable (Bool) -> Void)?
+    ) {
+        completion?(false)
+    }
 }
 
 @MainActor
@@ -73,7 +95,9 @@ final class TokenmonCaptureNotificationCoordinator: NSObject, TokenmonCaptureNot
     private enum Constants {
         static let speciesIDUserInfoKey = "species_id"
         static let encounterIDUserInfoKey = "encounter_id"
+        static let updateVersionUserInfoKey = "update_version"
         static let requestIdentifierPrefix = "tokenmon.capture."
+        static let updateRequestIdentifierPrefix = "tokenmon.update."
         static let attachmentIdentifier = "captured-species"
         static let previewDelaySeconds: TimeInterval = 2
         static let previewDeliveryCheckDelaySeconds: TimeInterval = 5
@@ -84,6 +108,7 @@ final class TokenmonCaptureNotificationCoordinator: NSObject, TokenmonCaptureNot
     private var authorizationRequestInFlight = false
     var onOpenCapturedSpecies: ((String) -> Void)?
     var onCaptureNotificationOpened: ((String, String) -> Void)?
+    var onOpenAvailableUpdate: ((String) -> Void)?
 
     init(
         notificationCenter: UNUserNotificationCenter = .current(),
@@ -187,6 +212,32 @@ final class TokenmonCaptureNotificationCoordinator: NSObject, TokenmonCaptureNot
         }
     }
 
+    func updateNotificationsPreferenceDidChange(
+        isEnabled: Bool,
+        completion: @escaping @MainActor (_ message: String?, _ error: String?) -> Void
+    ) {
+        guard isEnabled else {
+            completion(nil, nil)
+            return
+        }
+
+        ensureAuthorization(promptIfNeeded: true) { authorized in
+            Task { @MainActor in
+                if authorized {
+                    completion(
+                        TokenmonL10n.string("settings.feedback.update_notifications_enabled"),
+                        nil
+                    )
+                } else {
+                    completion(
+                        nil,
+                        TokenmonL10n.string("settings.feedback.update_notifications_denied")
+                    )
+                }
+            }
+        }
+    }
+
     func sendPreviewCaptureNotification(
         speciesID: String,
         assetKey: String,
@@ -249,6 +300,59 @@ final class TokenmonCaptureNotificationCoordinator: NSObject, TokenmonCaptureNot
                         )
                     }
                 }
+            }
+        }
+    }
+
+    func sendUpdateAvailableNotification(
+        version: String,
+        completion: (@MainActor @Sendable (Bool) -> Void)?
+    ) {
+        let trimmedVersion = version.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmedVersion.isEmpty == false else {
+            Self.notifyUpdateCompletion(completion, scheduled: false)
+            return
+        }
+
+        ensureAuthorization(promptIfNeeded: false) { [weak self] authorized in
+            guard let self else {
+                Self.notifyUpdateCompletion(completion, scheduled: false)
+                return
+            }
+
+            guard authorized else {
+                Self.logStaticDebug(
+                    supportDirectoryPath: self.supportDirectoryPath,
+                    event: "update_alert_blocked",
+                    metadata: ["version": trimmedVersion]
+                )
+                Self.notifyUpdateCompletion(completion, scheduled: false)
+                return
+            }
+
+            let supportDirectoryPath = self.supportDirectoryPath
+            let notificationCenter = self.notificationCenter
+            let request = Self.updateNotificationRequest(version: trimmedVersion)
+            notificationCenter.add(request) { error in
+                if let error {
+                    Self.logStaticError(
+                        supportDirectoryPath: supportDirectoryPath,
+                        event: "update_alert_schedule_failed",
+                        metadata: [
+                            "version": trimmedVersion,
+                            "error": error.localizedDescription,
+                        ]
+                    )
+                    Self.notifyUpdateCompletion(completion, scheduled: false)
+                    return
+                }
+
+                Self.logStaticNotice(
+                    supportDirectoryPath: supportDirectoryPath,
+                    event: "update_alert_scheduled",
+                    metadata: ["version": trimmedVersion]
+                )
+                Self.notifyUpdateCompletion(completion, scheduled: true)
             }
         }
     }
@@ -421,6 +525,19 @@ final class TokenmonCaptureNotificationCoordinator: NSObject, TokenmonCaptureNot
         }
     }
 
+    nonisolated private static func notifyUpdateCompletion(
+        _ completion: (@MainActor @Sendable (Bool) -> Void)?,
+        scheduled: Bool
+    ) {
+        guard let completion else {
+            return
+        }
+
+        Task { @MainActor in
+            completion(scheduled)
+        }
+    }
+
     private func notificationRequest(
         identifier: String,
         speciesID: String,
@@ -451,6 +568,21 @@ final class TokenmonCaptureNotificationCoordinator: NSObject, TokenmonCaptureNot
         )
     }
 
+    nonisolated private static func updateNotificationRequest(version: String) -> UNNotificationRequest {
+        let content = UNMutableNotificationContent()
+        content.title = TokenmonL10n.string("update.notification.title")
+        content.subtitle = TokenmonL10n.format("update.notification.subtitle", version)
+        content.body = TokenmonL10n.string("update.notification.body")
+        content.sound = .default
+        content.userInfo = [Constants.updateVersionUserInfoKey: version]
+
+        return UNNotificationRequest(
+            identifier: Constants.updateRequestIdentifierPrefix + version,
+            content: content,
+            trigger: nil
+        )
+    }
+
     private func notificationAttachment(assetKey: String) -> UNNotificationAttachment? {
         guard let url = TokenmonSpeciesSpriteLoader.notificationAttachmentURL(assetKey: assetKey) else {
             return nil
@@ -464,7 +596,7 @@ final class TokenmonCaptureNotificationCoordinator: NSObject, TokenmonCaptureNot
 
     private func ensureAuthorization(
         promptIfNeeded: Bool,
-        completion: @escaping @Sendable (Bool) -> Void
+        completion: @escaping @MainActor @Sendable (Bool) -> Void
     ) {
         notificationCenter.getNotificationSettings { [weak self] settings in
             let authorizationStatus = settings.authorizationStatus
@@ -636,6 +768,17 @@ extension TokenmonCaptureNotificationCoordinator: UNUserNotificationCenterDelega
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        if notification.request.identifier.hasPrefix(Constants.updateRequestIdentifierPrefix) {
+            let version = notification.request.content.userInfo[Constants.updateVersionUserInfoKey] as? String ?? "unknown"
+            Self.logStaticNotice(
+                supportDirectoryPath: supportDirectoryPath,
+                event: "update_alert_will_present",
+                metadata: ["version": version]
+            )
+            completionHandler([.list, .banner, .sound])
+            return
+        }
+
         let encounterID = notification.request.content.userInfo[Constants.encounterIDUserInfoKey] as? String ?? "unknown"
         Self.logStaticNotice(
             supportDirectoryPath: supportDirectoryPath,
@@ -650,6 +793,22 @@ extension TokenmonCaptureNotificationCoordinator: UNUserNotificationCenterDelega
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        if response.notification.request.identifier.hasPrefix(Constants.updateRequestIdentifierPrefix) {
+            let version = response.notification.request.content.userInfo[Constants.updateVersionUserInfoKey] as? String ?? "unknown"
+            Self.logStaticNotice(
+                supportDirectoryPath: supportDirectoryPath,
+                event: "update_alert_response_received",
+                metadata: ["version": version]
+            )
+
+            Task { @MainActor [weak self] in
+                self?.onOpenAvailableUpdate?(version)
+            }
+
+            completionHandler()
+            return
+        }
+
         let speciesID = response.notification.request.content.userInfo[Constants.speciesIDUserInfoKey] as? String
         let encounterID = response.notification.request.content.userInfo[Constants.encounterIDUserInfoKey] as? String ?? "unknown"
 

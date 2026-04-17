@@ -346,7 +346,7 @@
 "settings.general.section.notifications" = "알림";
 "settings.general.toggle.notify_on_capture" = "포획 시 알림";
 "settings.general.open_notification_settings" = "macOS 알림 설정 열기";
-"settings.general.notifications.note" = "이 옵션을 켜면 그때 macOS 알림 권한을 요청합니다. Tokenmon은 종을 포획했을 때만 알림을 보내며, 알림을 클릭하면 해당 Dex 항목이 열립니다.";
+"settings.general.notifications.note" = "이 옵션을 켜면 그때 macOS 알림 권한을 요청합니다. Tokenmon은 이 권한을 포획 알림과 선택적인 업데이트 준비 알림에 함께 사용합니다. 포획 알림은 여전히 종을 포획했을 때만 보내며, 알림을 클릭하면 해당 Dex 항목이 열립니다.";
 "settings.general.section.analytics" = "개인정보 및 분석";
 "settings.general.toggle.usage_analytics" = "익명 사용 분석 공유";
 "settings.general.analytics.note" = "분석은 직접 켜기 전까지 꺼져 있습니다. Tokenmon은 앱 실행, 프로바이더 설정, 조우, 포획, 업데이트 흐름 같은 익명 제품 이벤트만 기록합니다. 프롬프트 본문, 모델 출력, transcript 경로, 작업 내용은 보내지 않습니다.";
@@ -358,12 +358,13 @@
 "settings.updates.action.check_now" = "업데이트 확인…";
 "settings.updates.toggle.automatically_check" = "자동으로 업데이트 확인";
 "settings.updates.toggle.automatically_download" = "백그라운드에서 업데이트 다운로드";
+"settings.updates.toggle.notify_when_ready" = "업데이트 준비 시 알림";
 "settings.updates.feed" = "업데이트 피드: %1$@";
 "settings.updates.feed_source" = "피드 소스: %1$@";
 "settings.updates.public_key_source" = "서명 키 소스: %1$@";
 "settings.updates.override_file" = "로컬 override 파일: %1$@";
 "settings.updates.override_active" = "이 앱에는 기본값이 아닌 Sparkle 업데이트 구성이 활성화되어 있습니다.";
-"settings.updates.note" = "Tokenmon은 Sparkle을 사용해 서명된 릴리스 피드를 확인하고, 노타리제이션된 앱 업데이트를 제안합니다. Homebrew 설치본도 인앱 업데이트를 허용하도록 cask를 구성합니다.";
+"settings.updates.note" = "Tokenmon은 Sparkle을 사용해 서명된 릴리스 피드를 확인하고, 노타리제이션된 앱 업데이트를 제안합니다. Homebrew 설치본도 인앱 업데이트를 허용하도록 cask를 구성합니다. 업데이트 준비 알림을 켜면 포획 알림과 같은 macOS 알림 권한을 사용하며, 알림을 클릭하면 네이티브 업데이트 프롬프트를 엽니다.";
 "settings.updates.source.bundle_metadata" = "번들 릴리스 메타데이터";
 "settings.updates.source.local_override_file" = "로컬 override 파일";
 "settings.updates.source.process_environment" = "프로세스 환경변수";
@@ -398,6 +399,8 @@
 "settings.feedback.failed_notification_settings" = "macOS 알림 설정을 열지 못했습니다.";
 "settings.feedback.capture_notifications_enabled" = "포획 알림이 켜졌습니다. Tokenmon은 종을 포획했을 때만 알림을 보냅니다.";
 "settings.feedback.capture_notifications_denied" = "macOS에서 Tokenmon 알림이 꺼져 있습니다. 포획 알림을 허용하려면 알림 설정을 여세요.";
+"settings.feedback.update_notifications_enabled" = "업데이트 준비 알림이 켜졌습니다. 새 버전이 나오면 Tokenmon이 macOS 배너로 알려줄 수 있습니다.";
+"settings.feedback.update_notifications_denied" = "macOS에서 Tokenmon 알림이 꺼져 있습니다. 업데이트 준비 알림을 허용하려면 알림 설정을 여세요.";
 "settings.feedback.redetected_providers" = "Tokenmon이 로컬 프로바이더 설치를 다시 스캔했습니다.";
 "settings.feedback.reset_progress" = "진행도가 초기화되었습니다. Tokenmon은 이 시점 이후 관찰된 토큰 증가만 집계합니다.";
 "settings.feedback.reset_dex" = "Dex 진행도가 초기화되었습니다. 조우 이력과 토큰 합계는 유지되었습니다.";
@@ -444,6 +447,9 @@
 "onboarding.setup.status.checking" = "확인 중";
 "onboarding.setup.notifications.optional" = "새 종을 포획했을 때만 macOS 알림을 받고 싶다면 이 기능을 켜면 됩니다.";
 "onboarding.setup.notifications.ready" = "Tokenmon이 새 종을 포획하면 포획 알림을 바로 보낼 수 있습니다.";
+"update.notification.title" = "업데이트 준비됨";
+"update.notification.subtitle" = "Tokenmon %1$@ 버전을 설치할 수 있습니다";
+"update.notification.body" = "클릭하면 업데이트 프롬프트를 엽니다.";
 "onboarding.setup.ready.title" = "이 Mac은 이미 준비되어 있습니다";
 "onboarding.setup.ready.body" = "로그인 시 실행과 포획 알림이 이미 잘 준비되어 있습니다. 언제든 일반 설정에서 다시 바꿀 수 있습니다.";
 "onboarding.setup.revisit.title" = "나중에 다시 봐도 됩니다";

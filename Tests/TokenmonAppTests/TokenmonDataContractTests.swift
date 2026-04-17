@@ -105,6 +105,7 @@ struct TokenmonDataContractTests {
 
         let defaults = try manager.appSettings()
         #expect(defaults.fieldBackplateEnabled)
+        #expect(!defaults.updateNotificationsEnabled)
         #expect(defaults.appearancePreference == .system)
         #expect(defaults.languagePreference == .system)
         #expect(!defaults.firstRunSetupPromptShown)
@@ -113,6 +114,7 @@ struct TokenmonDataContractTests {
 
         var updated = defaults
         updated.notificationsEnabled = false
+        updated.updateNotificationsEnabled = true
         updated.firstRunSetupPromptShown = true
         updated.fieldBackplateEnabled = false
         updated.usageAnalyticsEnabled = true
@@ -123,6 +125,7 @@ struct TokenmonDataContractTests {
 
         let reloaded = try manager.appSettings()
         #expect(!reloaded.notificationsEnabled)
+        #expect(reloaded.updateNotificationsEnabled)
         #expect(reloaded.firstRunSetupPromptShown)
         #expect(!reloaded.fieldBackplateEnabled)
         #expect(reloaded.usageAnalyticsEnabled)

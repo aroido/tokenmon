@@ -127,9 +127,13 @@ final class TokenmonAppController {
         let databasePath = TokenmonDatabaseManager.defaultPath()
         let analyticsTracker = TokenmonPostHogAnalyticsTracker(databasePath: databasePath)
         let notificationCoordinator = TokenmonCaptureNotificationCoordinator()
-        let appUpdater = TokenmonAppUpdater(analyticsTracker: analyticsTracker)
         let menuModel = TokenmonMenuModel(
             databasePath: databasePath,
+            notificationCoordinator: notificationCoordinator,
+            analyticsTracker: analyticsTracker
+        )
+        let appUpdater = TokenmonAppUpdater(
+            settingsProvider: { menuModel.appSettings },
             notificationCoordinator: notificationCoordinator,
             analyticsTracker: analyticsTracker
         )
@@ -143,6 +147,10 @@ final class TokenmonAppController {
         }
         notificationCoordinator.onCaptureNotificationOpened = { [weak self] speciesID, encounterID in
             self?.captureNotificationOpened(speciesID: speciesID, encounterID: encounterID)
+        }
+        notificationCoordinator.onOpenAvailableUpdate = { [weak appUpdater] _ in
+            NSApp.activate(ignoringOtherApps: true)
+            appUpdater?.checkForUpdates()
         }
     }
 

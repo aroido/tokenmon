@@ -1382,6 +1382,7 @@ private struct TokenmonSettingsScreenshotShell: View {
                 onUpdateFieldBackplateEnabled: { _ in },
                 onUpdateNotificationsEnabled: { _ in },
                 onRequestNotificationPermission: {},
+                onUpdateUpdateNotificationsEnabled: { _ in },
                 onUpdateUsageAnalyticsEnabled: { _ in },
                 onOpenSystemNotificationSettings: {},
                 onOpenWelcomeGuide: {}
