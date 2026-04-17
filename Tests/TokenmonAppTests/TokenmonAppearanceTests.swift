@@ -6,6 +6,28 @@ import Testing
 
 struct TokenmonAppearanceTests {
     @Test
+    func adaptiveChromeResolutionPrefersCompatibilityWhenForcedOrRequired() {
+        #expect(
+            TokenmonAdaptiveChromeController.shouldUseCompatibilityChrome(
+                forceCompatibilityChrome: false,
+                runtimeSupportsNativeGlass: true
+            ) == false
+        )
+        #expect(
+            TokenmonAdaptiveChromeController.shouldUseCompatibilityChrome(
+                forceCompatibilityChrome: true,
+                runtimeSupportsNativeGlass: true
+            ) == true
+        )
+        #expect(
+            TokenmonAdaptiveChromeController.shouldUseCompatibilityChrome(
+                forceCompatibilityChrome: false,
+                runtimeSupportsNativeGlass: false
+            ) == true
+        )
+    }
+
+    @Test
     func appAppearancePreferenceMapsToNativeAppearanceOverrides() {
         #expect(AppAppearancePreference.system.appKitAppearanceName == nil)
         #expect(AppAppearancePreference.light.appKitAppearanceName == .aqua)

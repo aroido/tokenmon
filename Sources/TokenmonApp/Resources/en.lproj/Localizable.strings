@@ -2,6 +2,13 @@
 "provider.install.codex.success" = "Codex observation is automatic. Tokenmon will watch local Codex session files without installing hooks.";
 "provider.install.gemini.success" = "Gemini telemetry was configured automatically. Tokenmon will receive live telemetry on 127.0.0.1:4317.";
 "provider.install.gemini.already_configured" = "Gemini telemetry was already configured for Tokenmon.";
+"developer.section.chrome_preview" = "Compatibility Chrome";
+"developer.chrome_preview.note" = "On macOS 26, turn this on to preview the Sequoia fallback cards and buttons without leaving your current machine.";
+"developer.chrome_preview.force_toggle" = "Force Sequoia compatibility chrome";
+"developer.chrome_preview.current_mode_title" = "Current mode";
+"developer.chrome_preview.current_mode.native" = "Showing native macOS 26 glass.";
+"developer.chrome_preview.current_mode.compat" = "Showing the Sequoia compatibility fallback.";
+"developer.chrome_preview.current_mode.compat_required" = "This macOS version already uses the compatibility fallback.";
 "brand.aroido" = "Aroido";
 "common.github" = "GitHub";
 "common.website" = "Website";

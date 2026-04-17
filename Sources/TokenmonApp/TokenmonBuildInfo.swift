@@ -20,6 +20,7 @@ struct TokenmonBuildInfo: Equatable, Sendable {
     let commitShortHash: String?
     let hasLocalModifications: Bool
     let buildConfiguration: TokenmonBuildConfiguration
+    let developerToolsVisibilityOverride: Bool?
     let buildDate: Date?
 
     static let current = resolve()
@@ -31,6 +32,7 @@ struct TokenmonBuildInfo: Equatable, Sendable {
         commitShortHash: String?,
         hasLocalModifications: Bool,
         buildConfiguration: TokenmonBuildConfiguration,
+        developerToolsVisibilityOverride: Bool? = nil,
         buildDate: Date? = nil
     ) {
         self.marketingVersion = marketingVersion
@@ -39,6 +41,7 @@ struct TokenmonBuildInfo: Equatable, Sendable {
         self.commitShortHash = commitShortHash
         self.hasLocalModifications = hasLocalModifications
         self.buildConfiguration = buildConfiguration
+        self.developerToolsVisibilityOverride = developerToolsVisibilityOverride
         self.buildDate = buildDate
     }
 
@@ -108,12 +111,13 @@ struct TokenmonBuildInfo: Equatable, Sendable {
     }
 
     var developerToolsVisible: Bool {
-        buildConfiguration == .debug
+        developerToolsVisibilityOverride ?? (buildConfiguration == .debug)
     }
 
     static func resolve(
         bundle: Bundle = .main,
-        fileManager: FileManager = .default
+        fileManager: FileManager = .default,
+        processInfo: ProcessInfo = .processInfo
     ) -> TokenmonBuildInfo {
         let metadata = TokenmonGitMetadata.resolve(fileManager: fileManager, bundle: bundle)
 
@@ -124,6 +128,7 @@ struct TokenmonBuildInfo: Equatable, Sendable {
             commitShortHash: bundleString(bundle, key: "TokenmonGitCommitShort") ?? metadata?.commitShortHash,
             hasLocalModifications: bundleBool(bundle, key: "TokenmonGitDirty") ?? metadata?.hasLocalModifications ?? false,
             buildConfiguration: .current,
+            developerToolsVisibilityOverride: developerToolsVisibilityOverride(processInfo),
             buildDate: executableModificationDate(bundle: bundle, fileManager: fileManager)
         )
     }
@@ -177,6 +182,36 @@ struct TokenmonBuildInfo: Equatable, Sendable {
             }
         }
         return nil
+    }
+
+    private static func environmentBool(_ processInfo: ProcessInfo, key: String) -> Bool? {
+        guard let value = processInfo.environment[key] else {
+            return nil
+        }
+
+        return boolValue(value)
+    }
+
+    private static func developerToolsVisibilityOverride(_ processInfo: ProcessInfo) -> Bool? {
+        if processInfo.arguments.contains("--tokenmon-developer-tools-visible") {
+            return true
+        }
+        if processInfo.arguments.contains("--tokenmon-developer-tools-hidden") {
+            return false
+        }
+
+        return environmentBool(processInfo, key: "TOKENMON_DEVELOPER_TOOLS_VISIBLE")
+    }
+
+    private static func boolValue(_ rawValue: String) -> Bool? {
+        switch rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+        case "true", "yes", "1", "on":
+            return true
+        case "false", "no", "0", "off":
+            return false
+        default:
+            return nil
+        }
     }
 
     private static func executableModificationDate(

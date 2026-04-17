@@ -5,7 +5,7 @@ let package = Package(
     name: "Tokenmon",
     defaultLocalization: "en",
     platforms: [
-        .macOS(.v26),
+        .macOS(.v15),
     ],
     products: [
         .library(name: "TokenmonDomain", targets: ["TokenmonDomain"]),

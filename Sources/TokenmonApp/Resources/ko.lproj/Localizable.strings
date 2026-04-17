@@ -528,6 +528,13 @@
 "developer.action.reveal_support" = "Support 표시";
 "developer.section.provider_repair" = "프로바이더 복구";
 "developer.provider_repair.note" = "유지보수자가 두 번째 디스클로저를 열지 않아도 되도록 프로바이더 제어를 첫 레이어에 배치합니다.";
+"developer.section.chrome_preview" = "호환 크롬 미리보기";
+"developer.chrome_preview.note" = "macOS 26에서 이 스위치를 켜면 현재 머신을 떠나지 않고도 Sequoia용 fallback 카드와 버튼을 미리 볼 수 있습니다.";
+"developer.chrome_preview.force_toggle" = "Sequoia 호환 크롬 강제 사용";
+"developer.chrome_preview.current_mode_title" = "현재 모드";
+"developer.chrome_preview.current_mode.native" = "네이티브 macOS 26 glass를 표시 중입니다.";
+"developer.chrome_preview.current_mode.compat" = "Sequoia 호환 fallback을 표시 중입니다.";
+"developer.chrome_preview.current_mode.compat_required" = "이 macOS 버전은 이미 호환 fallback을 사용합니다.";
 "developer.section.scenario_presets" = "시나리오 프리셋";
 "developer.scenario_presets.note" = "이 프리셋은 빠른 QA 준비를 위한 것입니다. 즉시 적용되거나 기본 작업과 같은 확인된 리셋 흐름을 사용합니다.";
 "developer.section.resets" = "리셋";

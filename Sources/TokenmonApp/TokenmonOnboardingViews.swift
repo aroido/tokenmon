@@ -266,7 +266,7 @@ private struct TokenmonSetupRecommendationRow: View {
                 Button(actionTitle) {
                     onPerformAction(action)
                 }
-                .buttonStyle(.glass)
+                .tokenmonAdaptiveButtonStyle()
                 .controlSize(.small)
             }
         }
@@ -383,28 +383,28 @@ struct TokenmonOnboardingPanel: View {
                 Button(TokenmonL10n.string("onboarding.action.skip")) {
                     onSkip()
                 }
-                .buttonStyle(.glass)
+                .tokenmonAdaptiveButtonStyle()
 
                 Spacer()
 
                 Button(TokenmonL10n.string("onboarding.action.continue")) {
                     currentStep = .setup
                 }
-                .buttonStyle(.glassProminent)
+                .tokenmonAdaptiveButtonStyle(.prominent)
             }
         case .setup:
             HStack {
                 Button(TokenmonL10n.string("common.back")) {
                     currentStep = .welcome
                 }
-                .buttonStyle(.glass)
+                .tokenmonAdaptiveButtonStyle()
 
                 Spacer()
 
                 Button(TokenmonL10n.string("onboarding.action.finish")) {
                     onFinish()
                 }
-                .buttonStyle(.glassProminent)
+                .tokenmonAdaptiveButtonStyle(.prominent)
             }
         }
     }
@@ -979,7 +979,7 @@ private struct TokenmonOnboardingSetupFeatureCard: View {
                 Button(actionTitle) {
                     onPerformAction(action)
                 }
-                .buttonStyle(.glassProminent)
+                .tokenmonAdaptiveButtonStyle(.prominent)
                 .controlSize(.small)
             }
         }

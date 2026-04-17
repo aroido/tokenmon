@@ -1050,7 +1050,7 @@ struct TokenmonGeneralSettingsPane: View {
                         Button(TokenmonL10n.string("settings.general.open_login_items_settings")) {
                             onOpenLoginItemsSettings()
                         }
-                        .buttonStyle(.glass)
+                        .tokenmonAdaptiveButtonStyle()
                         .disabled(launchAtLoginState.isSupported == false)
                     }
                 }
@@ -1137,7 +1137,7 @@ struct TokenmonGeneralSettingsPane: View {
                         Button(TokenmonL10n.string("settings.general.open_notification_settings")) {
                             onOpenSystemNotificationSettings()
                         }
-                        .buttonStyle(.glass)
+                        .tokenmonAdaptiveButtonStyle()
 
                         TokenmonSettingsStatusRow(
                             text: notificationAuthorizationDetail,
@@ -1279,7 +1279,7 @@ private struct TokenmonAppUpdateSettingsView: View {
                 Button(TokenmonL10n.string("settings.updates.action.check_now")) {
                     appUpdater.checkForUpdates()
                 }
-                .buttonStyle(.glass)
+                .tokenmonAdaptiveButtonStyle()
                 .disabled(appUpdater.canCheckForUpdates == false)
 
                 Toggle(
@@ -1577,7 +1577,7 @@ struct TokenmonSettingsPaneHeader: View {
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(.glass)
+                    .tokenmonAdaptiveButtonStyle()
                     .controlSize(.regular)
             }
         }
@@ -1603,17 +1603,9 @@ struct TokenmonSettingsBanner: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.clear)
-                    .glassEffect(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        (banner.kind == .error ? Color.red : Color.green).opacity(0.22),
-                        lineWidth: 1
-                    )
+            .tokenmonAdaptiveSurface(
+                cornerRadius: 16,
+                strokeColor: (banner.kind == .error ? Color.red : Color.green).opacity(0.22)
             )
         }
     }
@@ -1646,14 +1638,9 @@ struct TokenmonSettingsSectionCard<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.secondary.opacity(0.10), lineWidth: 1)
+        .tokenmonAdaptiveSurface(
+            cornerRadius: 18,
+            strokeColor: Color.secondary.opacity(0.10)
         )
     }
 }
@@ -1835,12 +1822,12 @@ private struct TokenmonProviderSettingsCard: View {
                             Button(TokenmonL10n.string("settings.providers.action.change_executable")) {
                                 onChooseExecutable(status.provider)
                             }
-                            .buttonStyle(.glass)
+                            .tokenmonAdaptiveButtonStyle()
 
                             Button(TokenmonL10n.string("settings.providers.action.change_config")) {
                                 onChooseConfiguration(status.provider)
                             }
-                            .buttonStyle(.glass)
+                            .tokenmonAdaptiveButtonStyle()
                         }
                         .controlSize(.small)
 
@@ -1848,7 +1835,7 @@ private struct TokenmonProviderSettingsCard: View {
                             Button(TokenmonL10n.string("settings.providers.action.reset_auto")) {
                                 onResetToAuto(status.provider)
                             }
-                            .buttonStyle(.glass)
+                            .tokenmonAdaptiveButtonStyle()
                             .controlSize(.small)
                         }
 
@@ -1883,13 +1870,13 @@ private struct TokenmonProviderSettingsCard: View {
             Button(actionTitle) {
                 onConnectProvider(status.provider)
             }
-            .buttonStyle(.glassProminent)
+            .tokenmonAdaptiveButtonStyle(.prominent)
             .controlSize(.small)
         } else if status.cliInstalled == false {
             Button(TokenmonL10n.string("settings.providers.action.choose_path")) {
                 onChooseExecutable(status.provider)
             }
-            .buttonStyle(.glass)
+            .tokenmonAdaptiveButtonStyle()
             .controlSize(.small)
         }
     }
@@ -2002,11 +1989,7 @@ struct TokenmonCompactSection<Content: View>: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        )
+        .tokenmonAdaptiveSurface(cornerRadius: 12)
     }
 }
 
@@ -2364,49 +2347,11 @@ struct TokenmonDexPanel: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: $sidebarSelection) {
-                Section(TokenmonL10n.string("dex.section.collection")) {
-                    TokenmonDexSidebarRow(
-                        title: TokenmonDexSidebarSelection.all.title,
-                        systemImage: TokenmonDexSidebarSelection.all.systemImage,
-                        count: model.dexEntries.count
-                    )
-                    .tag(TokenmonDexSidebarSelection.all)
-
-                    TokenmonDexSidebarRow(
-                        title: TokenmonDexSidebarSelection.captured.title,
-                        systemImage: TokenmonDexSidebarSelection.captured.systemImage,
-                        count: model.dexEntries.filter { $0.status == .captured }.count
-                    )
-                    .tag(TokenmonDexSidebarSelection.captured)
-
-                    TokenmonDexSidebarRow(
-                        title: TokenmonDexSidebarSelection.seenUncaptured.title,
-                        systemImage: TokenmonDexSidebarSelection.seenUncaptured.systemImage,
-                        count: model.dexEntries.filter { $0.status == .seenUncaptured }.count
-                    )
-                    .tag(TokenmonDexSidebarSelection.seenUncaptured)
-
-                    TokenmonDexSidebarRow(
-                        title: TokenmonDexSidebarSelection.unknown.title,
-                        systemImage: TokenmonDexSidebarSelection.unknown.systemImage,
-                        count: model.dexEntries.filter { $0.status == .unknown }.count
-                    )
-                    .tag(TokenmonDexSidebarSelection.unknown)
-                }
-
-                Section {
-                    TokenmonDexSidebarRow(
-                        title: TokenmonDexSidebarSelection.party.title,
-                        systemImage: TokenmonDexSidebarSelection.party.systemImage,
-                        count: model.partyMembers.count,
-                        countText: String(format: TokenmonL10n.string("dex.sidebar.party.counter_format"), Int64(model.partyMembers.count))
-                    )
-                    .tag(TokenmonDexSidebarSelection.party)
-                }
-            }
-            .listStyle(.sidebar)
-            .navigationTitle(TokenmonL10n.string("window.title.dex"))
+            TokenmonDexSidebarList(
+                selection: $sidebarSelection,
+                dexEntries: model.dexEntries,
+                partyMembers: model.partyMembers
+            )
         } content: {
             TokenmonDexBrowserPane(
                 model: model,
@@ -2448,10 +2393,7 @@ struct TokenmonDexPanel: View {
         }
         .animation(.easeOut(duration: 0.2), value: cardTuning.panelVisible)
         .toolbar {
-            ToolbarItem {
-                TokenmonBuildVersionBadge()
-            }
-            .sharedBackgroundVisibility(.hidden)
+            dexToolbarContent
         }
         .onAppear {
             model.surfaceOpened(.dex, entrypoint: "window_content", emitAnalytics: false)
@@ -2476,6 +2418,15 @@ struct TokenmonDexPanel: View {
         .onChange(of: searchQuery) { _, _ in
             normalizeSelection()
         }
+    }
+
+    @ToolbarContentBuilder
+    private var dexToolbarContent: some ToolbarContent {
+        tokenmonAdaptiveSharedBackgroundHidden(
+            ToolbarItem {
+                TokenmonBuildVersionBadge()
+            }
+        )
     }
 
     private func normalizeSelection() {
@@ -2503,6 +2454,65 @@ struct TokenmonDexPanel: View {
         searchQuery = ""
         selectedSpeciesID = request.speciesID
         model.clearDexNavigationRequest(request)
+    }
+}
+
+private struct TokenmonDexSidebarList: View {
+    @Binding var selection: TokenmonDexSidebarSelection
+    let dexEntries: [DexEntrySummary]
+    let partyMembers: [PartyMemberSummary]
+
+    var body: some View {
+        List(selection: $selection) {
+            Section(TokenmonL10n.string("dex.section.collection")) {
+                TokenmonDexSidebarRow(
+                    title: TokenmonDexSidebarSelection.all.title,
+                    systemImage: TokenmonDexSidebarSelection.all.systemImage,
+                    count: dexEntries.count
+                )
+                .tag(TokenmonDexSidebarSelection.all)
+
+                TokenmonDexSidebarRow(
+                    title: TokenmonDexSidebarSelection.captured.title,
+                    systemImage: TokenmonDexSidebarSelection.captured.systemImage,
+                    count: dexEntries.filter { $0.status == .captured }.count
+                )
+                .tag(TokenmonDexSidebarSelection.captured)
+
+                TokenmonDexSidebarRow(
+                    title: TokenmonDexSidebarSelection.seenUncaptured.title,
+                    systemImage: TokenmonDexSidebarSelection.seenUncaptured.systemImage,
+                    count: dexEntries.filter { $0.status == .seenUncaptured }.count
+                )
+                .tag(TokenmonDexSidebarSelection.seenUncaptured)
+
+                TokenmonDexSidebarRow(
+                    title: TokenmonDexSidebarSelection.unknown.title,
+                    systemImage: TokenmonDexSidebarSelection.unknown.systemImage,
+                    count: dexEntries.filter { $0.status == .unknown }.count
+                )
+                .tag(TokenmonDexSidebarSelection.unknown)
+            }
+
+            Section {
+                TokenmonDexSidebarRow(
+                    title: TokenmonDexSidebarSelection.party.title,
+                    systemImage: TokenmonDexSidebarSelection.party.systemImage,
+                    count: partyMembers.count,
+                    countText: partyCountText
+                )
+                .tag(TokenmonDexSidebarSelection.party)
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle(TokenmonL10n.string("window.title.dex"))
+    }
+
+    private var partyCountText: String {
+        String(
+            format: TokenmonL10n.string("dex.sidebar.party.counter_format"),
+            Int64(partyMembers.count)
+        )
     }
 }
 

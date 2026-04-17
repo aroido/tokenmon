@@ -73,6 +73,7 @@ private struct TokenmonDeveloperConfirmation: Identifiable {
 
 struct TokenmonDeveloperPanel: View {
     @ObservedObject var model: TokenmonMenuModel
+    @ObservedObject private var adaptiveChromeController = TokenmonAdaptiveChromeController.shared
 
     @State private var selectedPane: TokenmonDeveloperPane = .quickFix
     @State private var backfillProvider: ProviderCode = .claude
@@ -316,6 +317,26 @@ struct TokenmonDeveloperPanel: View {
 
     private var qaControlsContent: some View {
         VStack(alignment: .leading, spacing: 18) {
+            TokenmonSettingsSectionCard(title: TokenmonL10n.string("developer.section.chrome_preview"), systemImage: "macwindow.on.rectangle") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(TokenmonL10n.string("developer.chrome_preview.note"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Toggle(
+                        TokenmonL10n.string("developer.chrome_preview.force_toggle"),
+                        isOn: $adaptiveChromeController.forceCompatibilityChrome
+                    )
+
+                    TokenmonDeveloperInfoRow(
+                        title: TokenmonL10n.string("developer.chrome_preview.current_mode_title"),
+                        value: adaptiveChromeStatusText,
+                        systemImage: adaptiveChromeController.shouldUseCompatibilityChrome ? "square.on.square.squareshape.controlhandles" : "sparkles.rectangle.stack",
+                        tint: adaptiveChromeController.shouldUseCompatibilityChrome ? .orange : .green
+                    )
+                }
+            }
+
             TokenmonSettingsSectionCard(title: TokenmonL10n.string("developer.section.scenario_presets"), systemImage: "rectangle.3.group") {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(TokenmonL10n.string("developer.scenario_presets.note"))
@@ -1128,6 +1149,18 @@ struct TokenmonDeveloperPanel: View {
         }
     }
 
+    private var adaptiveChromeStatusText: String {
+        if adaptiveChromeController.runtimeSupportsNativeGlass {
+            if adaptiveChromeController.forceCompatibilityChrome {
+                return TokenmonL10n.string("developer.chrome_preview.current_mode.compat")
+            }
+
+            return TokenmonL10n.string("developer.chrome_preview.current_mode.native")
+        }
+
+        return TokenmonL10n.string("developer.chrome_preview.current_mode.compat_required")
+    }
+
     private func reveal(path: String, isDirectory: Bool) {
         NSWorkspace.shared.activateFileViewerSelecting([
             URL(fileURLWithPath: path, isDirectory: isDirectory),
@@ -1207,12 +1240,12 @@ private struct TokenmonDeveloperActionButton: View {
     var body: some View {
         if prominent {
             baseButton
-                .buttonStyle(.glassProminent)
+                .tokenmonAdaptiveButtonStyle(.prominent, paddingMode: .labelProvided)
                 .controlSize(.regular)
                 .disabled(disabled)
         } else {
             baseButton
-                .buttonStyle(.glass)
+                .tokenmonAdaptiveButtonStyle(paddingMode: .labelProvided)
                 .controlSize(.regular)
                 .disabled(disabled)
         }
@@ -1255,11 +1288,7 @@ private struct TokenmonDeveloperMetricsGrid: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.clear)
-                        .glassEffect(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                )
+                .tokenmonAdaptiveSurface(cornerRadius: 12)
             }
         }
     }
@@ -1350,7 +1379,7 @@ private struct TokenmonDeveloperPathField: View {
                 TextField(title, text: $text)
                     .textFieldStyle(.roundedBorder)
                 Button(browseTitle, action: onBrowse)
-                    .buttonStyle(.glass)
+                    .tokenmonAdaptiveButtonStyle()
                     .controlSize(.small)
             }
         }
@@ -1491,14 +1520,9 @@ private struct TokenmonDeveloperProviderCard: View {
             }
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.secondary.opacity(0.10), lineWidth: 1)
+        .tokenmonAdaptiveSurface(
+            cornerRadius: 16,
+            strokeColor: Color.secondary.opacity(0.10)
         )
     }
 }
@@ -1586,11 +1610,7 @@ private struct TokenmonDeveloperDomainEventRow: View {
                 .textSelection(.enabled)
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        )
+        .tokenmonAdaptiveSurface(cornerRadius: 12)
     }
 
     private var payloadPreview: String {
@@ -1639,11 +1659,7 @@ private struct TokenmonDeveloperProviderSessionRow: View {
             }
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        )
+        .tokenmonAdaptiveSurface(cornerRadius: 12)
     }
 }
 
@@ -1691,11 +1707,7 @@ private struct TokenmonDeveloperIngestEventRow: View {
                 .textSelection(.enabled)
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        )
+        .tokenmonAdaptiveSurface(cornerRadius: 12)
     }
 }
 
@@ -1735,11 +1747,7 @@ private struct TokenmonDeveloperBackfillRunRow: View {
             }
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        )
+        .tokenmonAdaptiveSurface(cornerRadius: 12)
     }
 }
 
@@ -1776,14 +1784,9 @@ private struct TokenmonDeveloperDiagnosticCard: View {
             }
         }
         .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.clear)
-                .glassEffect(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.secondary.opacity(0.10), lineWidth: 1)
+        .tokenmonAdaptiveSurface(
+            cornerRadius: 16,
+            strokeColor: Color.secondary.opacity(0.10)
         )
     }
 }

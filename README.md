@@ -20,7 +20,7 @@ asking for an account or your prompt history.
 brew install --cask aroido/tokenmon/tokenmon
 ```
 
-- Requires macOS Sonoma or later
+- Requires macOS Sequoia or later
 
 ## Why People Keep It Open
 

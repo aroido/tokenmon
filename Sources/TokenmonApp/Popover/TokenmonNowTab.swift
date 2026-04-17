@@ -122,7 +122,7 @@ struct TokenmonNowTab: View {
                 Button(TokenmonL10n.string("analytics.prompt.enable")) {
                     model.updateUsageAnalyticsEnabled(true)
                 }
-                .buttonStyle(.glass)
+                .tokenmonAdaptiveButtonStyle()
 
                 Button(TokenmonL10n.string("analytics.prompt.not_now")) {
                     model.dismissUsageAnalyticsPrompt()

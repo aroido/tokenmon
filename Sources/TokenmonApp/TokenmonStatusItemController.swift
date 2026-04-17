@@ -174,6 +174,7 @@ final class TokenmonAppController {
             ],
             supportDirectoryPath: menuModel.supportDirectoryPath
         )
+        runStartupWindowAutomationIfRequested()
 
         let databasePath = menuModel.currentDatabasePath
         let supportDirectoryPath = menuModel.supportDirectoryPath
@@ -362,6 +363,56 @@ final class TokenmonAppController {
                 self.menuModel.emitAppOpenedAnalyticsIfNeeded()
             }
         }
+    }
+
+    private func runStartupWindowAutomationIfRequested(
+        processInfo: ProcessInfo = .processInfo
+    ) {
+        let environment = processInfo.environment
+        let arguments = processInfo.arguments
+        let shouldOpenSettings = arguments.contains("--tokenmon-open-settings-on-launch")
+            || Self.environmentFlag("TOKENMON_OPEN_SETTINGS_ON_LAUNCH", environment: environment)
+        let shouldOpenDeveloper = arguments.contains("--tokenmon-open-developer-on-launch")
+            || Self.environmentFlag("TOKENMON_OPEN_DEVELOPER_ON_LAUNCH", environment: environment)
+        let shouldOpenOnboarding = arguments.contains("--tokenmon-open-onboarding-on-launch")
+            || Self.environmentFlag("TOKENMON_OPEN_ONBOARDING_ON_LAUNCH", environment: environment)
+        let shouldOpenPopover = arguments.contains("--tokenmon-open-popover-on-launch")
+            || Self.environmentFlag("TOKENMON_OPEN_POPOVER_ON_LAUNCH", environment: environment)
+
+        guard shouldOpenSettings || shouldOpenDeveloper || shouldOpenOnboarding || shouldOpenPopover else {
+            return
+        }
+
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            guard let self else {
+                return
+            }
+
+            if shouldOpenSettings {
+                self.showSettings(pane: .general)
+            }
+            if shouldOpenDeveloper {
+                self.showDeveloperWindow()
+            }
+            if shouldOpenOnboarding {
+                self.showOnboardingWindow(entrypoint: "automation")
+            }
+            if shouldOpenPopover {
+                self.showPopover()
+            }
+        }
+    }
+
+    private static func environmentFlag(
+        _ key: String,
+        environment: [String: String]
+    ) -> Bool {
+        guard let rawValue = environment[key]?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else {
+            return false
+        }
+
+        return ["1", "true", "yes", "on"].contains(rawValue)
     }
 
     func stop() {
