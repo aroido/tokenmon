@@ -2635,6 +2635,132 @@ struct TokenmonDataContractTests {
     }
 
     @Test
+    func latestClaudeSessionTotalsFiltersByIngestEventSourceMode() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tokenmon-claude-totals-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let dbPath = tempDirectory.appendingPathComponent("tokenmon.sqlite").path
+        let manager = TokenmonDatabaseManager(path: dbPath)
+        try manager.bootstrap()
+
+        let database = try manager.open()
+        try database.execute("PRAGMA foreign_keys = OFF;")
+
+        try insertClaudeSeedRow(
+            database: database,
+            sessionID: "session-A",
+            sourceMode: "claude_otel_api_request_live",
+            fingerprint: "fp-A",
+            input: 1200, output: 600, cached: 100, normalized: 1800
+        )
+        try insertClaudeSeedRow(
+            database: database,
+            sessionID: "session-B",
+            sourceMode: "claude_hook_enrichment",
+            fingerprint: "fp-B",
+            input: 900, output: 400, cached: 50, normalized: 1300
+        )
+        try database.execute("PRAGMA foreign_keys = ON;")
+
+        let totals = try manager.latestClaudeSessionTotals(
+            activeWithinHours: 24,
+            asOf: ISO8601DateFormatter().date(from: "2026-04-09T13:00:30Z")!
+        )
+
+        #expect(totals["session-A"]?.normalizedTotalTokens == 1800)
+        #expect(totals["session-A"]?.totalInputTokens == 1200)
+        #expect(totals["session-A"]?.totalOutputTokens == 600)
+        #expect(totals["session-B"] == nil)
+    }
+
+    @Test
+    func latestClaudeSessionTotalsReturnsEmptyOnFreshDatabase() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("tokenmon-claude-empty-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let dbPath = tempDirectory.appendingPathComponent("tokenmon.sqlite").path
+        let manager = TokenmonDatabaseManager(path: dbPath)
+        try manager.bootstrap()
+
+        let totals = try manager.latestClaudeSessionTotals(
+            activeWithinHours: 24,
+            asOf: ISO8601DateFormatter().date(from: "2026-04-09T13:00:00Z")!
+        )
+
+        #expect(totals.isEmpty)
+    }
+
+    private func insertClaudeSeedRow(
+        database: SQLiteDatabase,
+        sessionID: String,
+        sourceMode: String,
+        fingerprint: String,
+        input: Int64,
+        output: Int64,
+        cached: Int64,
+        normalized: Int64,
+        observedAt: String = "2026-04-09T13:00:00Z"
+    ) throws {
+        try database.execute(
+            """
+            INSERT INTO provider_sessions (
+                provider_code, provider_session_id, session_identity_kind, source_mode,
+                model_slug, workspace_dir, transcript_path, started_at, ended_at,
+                last_seen_at, session_state, created_at, updated_at
+            ) VALUES ('claude', ?, 'claude.session_id', ?, 'claude-sonnet-4-6',
+                      NULL, NULL, '2026-04-09T10:00:00Z', NULL, ?, 'active', ?, ?);
+            """,
+            bindings: [
+                .text(sessionID), .text(sourceMode),
+                .text(observedAt), .text(observedAt), .text(observedAt),
+            ]
+        )
+        let sessionRowID = try database.fetchOne("SELECT last_insert_rowid();") { stmt in
+            SQLiteDatabase.columnInt64(stmt, index: 0)
+        } ?? 0
+
+        try database.execute(
+            """
+            INSERT INTO provider_ingest_events (
+                provider_code, source_mode, provider_session_row_id,
+                provider_event_fingerprint, raw_reference_kind,
+                raw_reference_event_name, raw_reference_offset,
+                observed_at, payload_json, acceptance_state, created_at
+            ) VALUES ('claude', ?, ?, ?, 'claude-otel',
+                      'claude.api_request', NULL, ?, '{}', 'accepted', ?);
+            """,
+            bindings: [
+                .text(sourceMode), .integer(sessionRowID), .text(fingerprint),
+                .text(observedAt), .text(observedAt),
+            ]
+        )
+        let ingestEventRowID = try database.fetchOne("SELECT last_insert_rowid();") { stmt in
+            SQLiteDatabase.columnInt64(stmt, index: 0)
+        } ?? 0
+
+        try database.execute(
+            """
+            INSERT INTO usage_samples (
+                provider_ingest_event_id, provider_code, provider_session_row_id,
+                observed_at, total_input_tokens, total_output_tokens,
+                total_cached_input_tokens, normalized_total_tokens,
+                normalized_delta_tokens, current_input_tokens, current_output_tokens,
+                burst_intensity_band, created_at
+            ) VALUES (?, 'claude', ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 1, ?);
+            """,
+            bindings: [
+                .integer(ingestEventRowID), .integer(sessionRowID), .text(observedAt),
+                .integer(input), .integer(output), .integer(cached),
+                .integer(normalized), .integer(normalized), .text(observedAt),
+            ]
+        )
+    }
+
+    @Test
     func geminiCumulativeTrackerAccumulatesAndPicksUpFromSeed() {
         let seed: [String: GeminiSessionRunningTotals] = [
             "session-A": GeminiSessionRunningTotals(

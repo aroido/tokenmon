@@ -1072,6 +1072,8 @@ public extension TokenmonDatabaseManager {
         JOIN usage_samples us
           ON us.provider_session_row_id = ps.provider_session_row_id
          AND us.provider_code = ?
+        JOIN provider_ingest_events pie
+          ON pie.provider_ingest_event_id = us.provider_ingest_event_id
         WHERE ps.provider_code = ?
           AND us.observed_at >= ?
         """
@@ -1082,7 +1084,7 @@ public extension TokenmonDatabaseManager {
         ]
         if let sourceModes, sourceModes.isEmpty == false {
             let placeholders = Array(repeating: "?", count: sourceModes.count).joined(separator: ", ")
-            sql += "\n  AND us.source_mode IN (\(placeholders))"
+            sql += "\n  AND pie.source_mode IN (\(placeholders))"
             bindings.append(contentsOf: sourceModes.map { .text($0) })
         }
         sql += """
