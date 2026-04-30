@@ -1,7 +1,7 @@
 # Tokenmon Public Docs Index
 
-This public repo keeps only the minimum docs needed to understand the shipped
-product and the public source surface.
+This public repo keeps the docs needed to understand the shipped product, the
+public source surface, and public contribution boundaries.
 
 | Document | Status | Summary |
 |---|---|---|

@@ -54,13 +54,12 @@ brew install --cask aroido/tokenmon/tokenmon
 
 ## 공개 소스 레포
 
-- 이 저장소는 배포된 Tokenmon 스냅샷을 공개하는 source-available 미러입니다.
+- 이 저장소는 Tokenmon의 canonical public source-available 코드베이스입니다.
 - GitHub Releases, Sparkle 업데이트, Homebrew 설치 기준은 이 저장소가
   맡습니다.
-- 일상 개발, maintainer 워크플로, 내부 검수 산출물은 이 공개 미러 밖에서
-  관리합니다.
-- 이 저장소는 빌드 가능한 공개 스냅샷으로 보되, 일상 협업의 주 개발 레포로
-  가정하지 않는 편이 좋습니다.
+- 외부 이슈와 Pull Request는 이 저장소로 보내면 됩니다.
+- maintainer 전용 워크플로, 내부 기획, 원본 아트 검수 파일, private
+  operator 자산은 이 공개 코드베이스 밖에서 관리합니다.
 
 ## 소스에서 직접 빌드
 

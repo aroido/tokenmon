@@ -54,14 +54,13 @@ brew install --cask aroido/tokenmon/tokenmon
 
 ## Public Source Repo
 
-- This repository is the public, source-available mirror of shipped Tokenmon
-  snapshots.
+- This repository is the canonical public, source-available codebase for
+  Tokenmon.
 - GitHub Releases, Sparkle updates, and Homebrew installs are published from
   this repository.
-- Day-to-day development, maintainer workflows, and internal review artifacts
-  live outside this public mirror.
-- Treat this repo as a buildable release snapshot, not as the primary
-  day-to-day collaboration lane.
+- External issues and pull requests should target this repository.
+- Maintainer-only workflows, internal planning, original art review files, and
+  private operator assets live outside this public codebase.
 
 ## Build From Source
 

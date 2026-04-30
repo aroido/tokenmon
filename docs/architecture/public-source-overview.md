@@ -1,20 +1,21 @@
 # Tokenmon Public Source Overview
 
-**Document status:** Public source guide  
-**Audience:** Evaluators, advanced users, and maintainers building from the public mirror  
+**Document status:** Public source guide
+**Audience:** Evaluators, advanced users, external contributors, and maintainers building from the public repo
 **Related docs:** `../../README.md`, `../../CONTRIBUTING.md`, `../../LICENSE.md`, `../../TRADEMARKS.md`
 
 ---
 
 ## 1. Purpose
 
-This repository is the public, source-available mirror of shipped Tokenmon
-snapshots.
+This repository is the canonical public, source-available codebase for
+Tokenmon.
 
 It exists to provide:
 
 - inspectable product code
-- a buildable local source snapshot
+- a buildable local source tree
+- the public contribution lane for product/runtime changes
 - GitHub Releases for DMG and ZIP downloads
 - the Sparkle `appcast.xml` and Homebrew cask assets used by release builds
 
@@ -22,7 +23,7 @@ It exists to provide:
 
 ## 2. What is included here
 
-The public mirror keeps:
+The public repo keeps:
 
 - app source under `Sources/`
 - automated checks, fixtures, and public tests
@@ -34,7 +35,7 @@ The public mirror keeps:
 
 ## 3. What is intentionally omitted
 
-The public mirror does not carry the full private maintainer workspace.
+The public repo does not carry the full private maintainer workspace.
 
 That means this repo intentionally omits:
 
@@ -44,7 +45,7 @@ That means this repo intentionally omits:
 - internal repair scripts and operator runbooks
 
 If you do not see a maintainer workflow document here, assume it belongs to the
-private development repo rather than the public release mirror.
+private development repo rather than the public codebase.
 
 ---
 
@@ -78,13 +79,17 @@ helper script `scripts/tokenmon-release-targets`.
 
 ## 6. Contribution posture
 
-This repo is intentionally closer to a release mirror than to a normal
-open-collaboration development repo.
+This repo accepts focused public contributions, but only for the shipped
+runtime, public docs, and public release surface.
 
 Practical implications:
 
-- public snapshots are selected, not continuous
-- issues and PRs may be accepted selectively or not at all
+- pull requests should stay limited to public code, public docs, or release
+  tooling that ships from this repo
+- maintainer-only workflow assets, internal planning docs, original art review
+  files, and private operator materials belong outside this repo
+- issues and PRs may still be accepted selectively based on product fit and
+  maintainer capacity
 - source visibility does not imply open-source governance
 
 See the license files for the exact legal terms.

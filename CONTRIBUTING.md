@@ -2,19 +2,19 @@
 
 Thanks for looking at Tokenmon.
 
-This repository is the public, source-available mirror of shipped Tokenmon
-snapshots. We keep it buildable and inspectable, but we do not use it as the
-primary day-to-day development repo.
+This repository is the canonical public, source-available codebase for
+Tokenmon. External issues and pull requests should target this repository.
 
 ## What To Expect
 
 - GitHub Releases, Sparkle app updates, and Homebrew installs are published
   from this repository.
-- Public source snapshots may lag behind private day-to-day development.
-- If issue tracking is enabled, prefer focused bug reports and reproducible
-  release regressions.
-- Do not assume pull requests will be reviewed or merged on the same cadence as
-  the release builds.
+- Pull requests are welcome when they are focused, reproducible, and limited to
+  public product/runtime changes.
+- Maintainer-only workflow assets, internal planning docs, original art review
+  files, and private operator materials are not accepted in this repo.
+- Release publishing stays here, so changes that affect the shipped app must
+  keep public build and release checks working.
 
 ## Build And Verify
 
@@ -30,7 +30,7 @@ swift build
 - Do not add maintainer-only workflow assets, internal review artifacts, or
   private operator docs here.
 - Keep user-facing docs product-first and release-focused.
-- If a public snapshot changes release behavior, update the relevant release
+- If a public code change affects release behavior, update the relevant release
   scripts and public docs in the same change.
 
 ## License
