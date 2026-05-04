@@ -194,7 +194,10 @@ enum TokenmonProviderDiscovery {
     }
 
     private static func candidateExecutablePaths(named executable: String) -> [String] {
-        let home = resolvedHomeDirectory()
+        candidateExecutablePaths(named: executable, home: resolvedHomeDirectory())
+    }
+
+    static func candidateExecutablePaths(named executable: String, home: URL) -> [String] {
         var paths = Set<String>()
 
         let envPath = ProcessInfo.processInfo.environment["PATH"] ?? ""
@@ -211,6 +214,11 @@ enum TokenmonProviderDiscovery {
             "/usr/bin",
             home.appendingPathComponent("bin", isDirectory: true).path,
             home.appendingPathComponent(".local/bin", isDirectory: true).path,
+            home.appendingPathComponent(".local/share/mise/shims", isDirectory: true).path,
+            home.appendingPathComponent(".asdf/shims", isDirectory: true).path,
+            home.appendingPathComponent(".volta/bin", isDirectory: true).path,
+            home.appendingPathComponent(".bun/bin", isDirectory: true).path,
+            home.appendingPathComponent("Library/pnpm", isDirectory: true).path,
             home.appendingPathComponent(".npm-global/bin", isDirectory: true).path,
             home.appendingPathComponent(".yarn/bin", isDirectory: true).path,
         ]
@@ -222,7 +230,24 @@ enum TokenmonProviderDiscovery {
             paths.insert(candidate)
         }
 
+        for directory in miseNodeBinDirectories(home: home) {
+            let candidate = URL(fileURLWithPath: directory, isDirectory: true)
+                .appendingPathComponent(executable)
+                .path
+            paths.insert(candidate)
+        }
+
         return Array(paths).sorted()
+    }
+
+    static func miseNodeBinDirectories(home: URL) -> [String] {
+        let installsRoot = home.appendingPathComponent(".local/share/mise/installs/node", isDirectory: true).path
+        guard let entries = try? FileManager.default.contentsOfDirectory(atPath: installsRoot) else {
+            return []
+        }
+        return entries
+            .map { (installsRoot as NSString).appendingPathComponent($0) + "/bin" }
+            .filter { FileManager.default.fileExists(atPath: $0) }
     }
 
     private static func shellLookupPath(for executable: String) -> String? {
@@ -232,34 +257,50 @@ enum TokenmonProviderDiscovery {
             "/bin/bash",
         ].compactMap { $0 }
 
+        // -ilc loads both login (.zprofile) and interactive (.zshrc) configs so
+        // PATH-modifying tools like mise/asdf activated in .zshrc are picked up
+        // when this app runs from a GUI context with a sparse inherited PATH.
+        // Fall back to -lc for environments where -i causes side effects.
+        let invocationArgs: [[String]] = [["-ilc"], ["-lc"]]
+
         for shell in candidateShells {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: shell)
-            process.arguments = ["-lc", "command -v \(shellEscape(executable))"]
-
-            let outputPipe = Pipe()
-            process.standardOutput = outputPipe
-            process.standardError = Pipe()
-
-            do {
-                try process.run()
-                process.waitUntilExit()
-            } catch {
-                continue
-            }
-
-            guard process.terminationStatus == 0 else {
-                continue
-            }
-
-            let output = String(decoding: outputPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if output.hasPrefix("/") {
-                return output
+            for args in invocationArgs {
+                if let path = runShellLookup(shell: shell, args: args, executable: executable) {
+                    return path
+                }
             }
         }
 
         return nil
+    }
+
+    private static func runShellLookup(shell: String, args: [String], executable: String) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: shell)
+        process.arguments = args + ["command -v \(shellEscape(executable))"]
+
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = Pipe()
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+
+        guard process.terminationStatus == 0 else {
+            return nil
+        }
+
+        let output = String(decoding: outputPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // -ilc may emit shell prompts, MOTD, or sourced banners; pick the last
+        // line that looks like an absolute path so a noisy config does not
+        // poison the resolved executable path.
+        let lines = output.split(separator: "\n").map { String($0).trimmingCharacters(in: .whitespaces) }
+        return lines.reversed().first { $0.hasPrefix("/") }
     }
 
     private static func shellEscape(_ value: String) -> String {
