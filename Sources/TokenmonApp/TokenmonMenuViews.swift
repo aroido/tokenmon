@@ -1163,6 +1163,8 @@ enum TokenmonSettingsPresentationBuilder {
             return "best_effort"
         case .cursor:
             return "stats_only"
+        case .openclaw:
+            return "best_effort"
         }
     }
 
@@ -1543,6 +1545,8 @@ private struct TokenmonProviderSettingsCard: View {
             return "antenna.radiowaves.left.and.right"
         case .cursor:
             return "arrow.triangle.branch"
+        case .openclaw:
+            return "point.3.connected.trianglepath.dotted"
         }
     }
 

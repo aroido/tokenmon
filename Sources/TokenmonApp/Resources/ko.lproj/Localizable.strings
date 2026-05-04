@@ -277,6 +277,7 @@
 "provider.install.claude.statusline_fallback" = "기존 Claude OTel 설정을 보존했습니다. Tokenmon은 상태 줄로 Claude 사용량을 관찰합니다.";
 "provider.install.claude.passive_transcript" = "Claude passive transcript 관찰이 준비되었습니다. Tokenmon은 Claude 상태 줄, hooks, OTel 설정을 변경하지 않았습니다.";
 "provider.install.codex.success" = "Codex 관찰은 automatic입니다. Tokenmon이 로컬 Codex 세션 파일을 별도 설치 없이 감시합니다.";
+"provider.install.openclaw.success" = "OpenClaw 관찰은 automatic입니다. Tokenmon이 로컬 OpenClaw 세션 파일을 별도 설치 없이 감시합니다.";
 "provider.install.gemini.success" = "Gemini 텔레메트리가 자동으로 설정되었습니다. Tokenmon이 127.0.0.1:4317에서 라이브 텔레메트리를 받습니다.";
 "provider.install.gemini.already_configured" = "Gemini 텔레메트리가 이미 Tokenmon용으로 설정되어 있습니다.";
 "provider.gemini.install.conflict_error" = "Gemini 텔레메트리가 이미 %1$@ 대상으로 설정되어 있습니다. Tokenmon으로 전환하려면 설정에서 엔드포인트를 덮어쓰세요.";
@@ -308,6 +309,10 @@
 "provider.codex.path_missing.action" = "Codex 경로 수정";
 "provider.codex.ready.title" = "Codex 준비됨";
 "provider.codex.ready.detail" = "Tokenmon이 로컬 Codex 세션을 best-effort로 자동 감시합니다. managed codex exec --json이 가장 신뢰도 높은 Codex 수집 모드입니다.";
+"provider.openclaw.missing.title" = "OpenClaw 감지 안 됨";
+"provider.openclaw.missing.detail" = "OpenClaw를 설치하거나 경로를 지정하세요.";
+"provider.openclaw.ready.title" = "OpenClaw 준비됨";
+"provider.openclaw.ready.detail" = "Tokenmon이 로컬 OpenClaw 세션을 자동 감시합니다.";
 
 "provider.gemini.connected.title" = "Gemini 연결됨";
 "provider.gemini.connected.detail" = "Gemini 텔레메트리가 Tokenmon으로 전달되고 있습니다. 게임플레이는 라이브 관찰만 반영하며 오프라인 대시보드 복구는 지원되지 않습니다.";
@@ -473,6 +478,7 @@
 "settings.feedback.claude_backfill_complete" = "Claude backfill 완료. 샘플 %1$lld개 생성, 중복 %2$lld개 건너뜀.";
 "settings.feedback.codex_backfill_complete" = "Codex backfill 완료. 샘플 %1$lld개 생성, 중복 %2$lld개 건너뜀.";
 "settings.feedback.codex_backfill_noop" = "Codex backfill에서 새로 복구할 샘플을 찾지 못했습니다.";
+"settings.feedback.openclaw_backfill_complete" = "OpenClaw backfill 완료. 샘플 %1$lld개 생성, 중복 %2$lld개 건너뜀.";
 "settings.feedback.gemini_backfill_unsupported" = "Gemini transcript backfill은 아직 지원되지 않습니다.";
 "settings.feedback.provider_paths_updated" = "프로바이더 경로를 업데이트했습니다.";
 

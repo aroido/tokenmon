@@ -53,6 +53,8 @@ public struct ProviderInstallationPreferences: Equatable, Codable, Sendable {
             return ProviderInstallationPathOverride()
         case .cursor:
             return ProviderInstallationPathOverride()
+        case .openclaw:
+            return ProviderInstallationPathOverride()
         }
     }
 
@@ -65,6 +67,8 @@ public struct ProviderInstallationPreferences: Equatable, Codable, Sendable {
         case .gemini:
             break
         case .cursor:
+            break
+        case .openclaw:
             break
         }
     }
@@ -79,6 +83,8 @@ public struct ProviderInstallationPreferences: Equatable, Codable, Sendable {
             break
         case .cursor:
             break
+        case .openclaw:
+            break
         }
     }
 
@@ -91,6 +97,8 @@ public struct ProviderInstallationPreferences: Equatable, Codable, Sendable {
         case .gemini:
             break
         case .cursor:
+            break
+        case .openclaw:
             break
         }
     }

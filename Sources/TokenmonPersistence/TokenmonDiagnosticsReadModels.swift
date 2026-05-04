@@ -418,6 +418,12 @@ public extension TokenmonDatabaseManager {
                 "missing_configuration",
                 "Cursor usage export has not been imported yet"
             )
+        case .openclaw:
+            return (
+                sourceMode ?? "openclaw_session_store_live",
+                "missing_configuration",
+                "OpenClaw is not detected or has no session activity yet"
+            )
         }
     }
 
@@ -431,6 +437,8 @@ public extension TokenmonDatabaseManager {
             return "unavailable"
         case .cursor:
             return "api_sync_supported"
+        case .openclaw:
+            return "automatic_supported"
         }
     }
 
@@ -455,6 +463,8 @@ public extension TokenmonDatabaseManager {
             return healthState != "missing_configuration" && healthState != "unsupported"
         case .cursor:
             return false
+        case .openclaw:
+            return healthState != "unsupported"
         }
     }
 
@@ -476,6 +486,8 @@ public extension TokenmonDatabaseManager {
             return sourceMode == "codex_exec_json" ? "managed_first_class" : "best_effort"
         case .cursor:
             return "stats_only"
+        case .openclaw:
+            return "best_effort"
         }
     }
 
@@ -519,7 +531,7 @@ public extension TokenmonDatabaseManager {
                 "legacy_cursor_encounters": "\(legacyCursorEncounters)",
                 "legacy_cursor_gameplay_history_detected": legacyCursorEncounters > 0 ? "yes" : "no",
             ]
-        case .claude, .codex, .gemini:
+        case .claude, .codex, .gemini, .openclaw:
             return [:]
         }
     }

@@ -59,6 +59,7 @@ struct TokenmonProviderIndicator: View {
         case .codex: return "Codex"
         case .gemini: return "Gemini"
         case .cursor: return "Cursor"
+        case .openclaw: return "OpenClaw"
         }
     }
 

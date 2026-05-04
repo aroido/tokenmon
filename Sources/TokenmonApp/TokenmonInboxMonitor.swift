@@ -178,6 +178,9 @@ final class TokenmonInboxMonitor: @unchecked Sendable {
             case .cursor:
                 ProviderBackfillRequestQueue.removeRequest(at: pendingRequest.filePath)
                 continue
+            case .openclaw:
+                ProviderBackfillRequestQueue.removeRequest(at: pendingRequest.filePath)
+                continue
             }
 
             ProviderBackfillRequestQueue.removeRequest(at: pendingRequest.filePath)
