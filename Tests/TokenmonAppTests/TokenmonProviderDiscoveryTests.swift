@@ -37,6 +37,45 @@ struct TokenmonProviderDiscoveryTests {
         #expect(dirs.isEmpty)
     }
 
+    @Test
+    func shellLookupReturnsAbsolutePathOnSuccess() {
+        let result = TokenmonProviderDiscovery.runShellLookup(
+            shell: "/bin/sh",
+            args: ["-c", "echo /usr/bin/true"],
+            terminateAfter: 2.0,
+            killAfter: 2.5
+        )
+        #expect(result == "/usr/bin/true")
+    }
+
+    @Test
+    func shellLookupTerminatesBlockingSubprocess() {
+        let start = Date()
+        let result = TokenmonProviderDiscovery.runShellLookup(
+            shell: "/bin/sh",
+            args: ["-c", "sleep 30; echo /never/printed"],
+            terminateAfter: 0.3,
+            killAfter: 0.6
+        )
+        let elapsed = Date().timeIntervalSince(start)
+
+        #expect(result == nil)
+        #expect(elapsed < 3.0)
+    }
+
+    @Test
+    func shellLookupSurvivesLargeOutputWithoutDeadlock() {
+        // Emit ~200KB of noise (well past the 64KB pipe buffer) before the
+        // path line to ensure the async drain prevents deadlock.
+        let result = TokenmonProviderDiscovery.runShellLookup(
+            shell: "/bin/sh",
+            args: ["-c", "yes banner | head -c 204800; echo; echo /usr/bin/true"],
+            terminateAfter: 5.0,
+            killAfter: 5.5
+        )
+        #expect(result == "/usr/bin/true")
+    }
+
     private func makeTempHome() throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("tokenmon-discovery-\(UUID().uuidString)", isDirectory: true)
