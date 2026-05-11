@@ -646,6 +646,8 @@ enum TokenmonAutomationCommand {
             throw AutomationError.invalidUsage("gemini transcript backfill is not yet supported")
         case .cursor:
             throw AutomationError.invalidUsage("cursor transcript backfill is not yet supported")
+        case .openclaw:
+            throw AutomationError.invalidUsage("openclaw transcript backfill is not yet supported")
         }
     }
 

@@ -1139,7 +1139,7 @@ require_contains "$app_smoke_output" "seen_species: 0"
 require_contains "$app_smoke_output" "captured_species: 0"
 require_contains "$app_smoke_output" "notifications_enabled: false"
 require_contains "$app_smoke_output" "provider_status_visibility: true"
-require_contains "$app_smoke_output" "provider_status_entries_visible: 4"
+require_contains "$app_smoke_output" "provider_status_entries_visible: 5"
 require_contains "$app_smoke_output" "launch_at_login_supported: false"
 require_contains "$app_smoke_output" "latest_encounter: none"
 printf 'VERIFY PASS: menubar app empty-db smoke\n'
@@ -1153,7 +1153,7 @@ require_contains "$seed_rerun_output" "seeded species: total=151 inserted=0"
 printf 'VERIFY PASS: species seed rerun idempotency\n'
 
 summary_output="$(tokenmon_app_cmd --tokenmon-summary --db "$db" 2>&1)"
-require_contains "$summary_output" "providers: 4"
+require_contains "$summary_output" "providers: 5"
 require_contains "$summary_output" "species: 151"
 printf 'VERIFY PASS: summary after bootstrap/seed\n'
 

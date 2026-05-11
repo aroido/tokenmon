@@ -276,6 +276,8 @@ enum GameplayTokenBalancer {
             return 0.35
         case .cursor:
             return 0.50
+        case .openclaw:
+            return 0.15
         }
     }
 

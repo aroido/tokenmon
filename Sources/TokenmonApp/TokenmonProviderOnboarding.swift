@@ -71,6 +71,8 @@ enum TokenmonProviderOnboarding {
                 return inspectGemini(preferences: preferences)
             case .cursor:
                 return inspectCursor(databasePath: databasePath, preferences: preferences)
+            case .openclaw:
+                return inspectOpenclaw(preferences: preferences)
             }
         }
     }
@@ -114,6 +116,8 @@ enum TokenmonProviderOnboarding {
                 provider: .cursor,
                 message: "Cursor sync is managed through scripts/cursor-usage-prototype"
             )
+        case .openclaw:
+            return installOpenclaw()
         }
     }
 
@@ -128,6 +132,14 @@ enum TokenmonProviderOnboarding {
                     provider: provider,
                     configured: false,
                     message: TokenmonL10n.string("provider.cursor.sync.detail"),
+                    error: nil
+                )
+            }
+            if provider == .openclaw {
+                return TokenmonProviderAutoSetupResult(
+                    provider: provider,
+                    configured: false,
+                    message: TokenmonL10n.string("provider.install.openclaw.success"),
                     error: nil
                 )
             }
@@ -163,6 +175,56 @@ enum TokenmonProviderOnboarding {
                 )
             }
         }
+    }
+
+    private static func inspectOpenclaw(
+        preferences: ProviderInstallationPreferences
+    ) -> TokenmonProviderOnboardingStatus {
+        let discovery = TokenmonProviderDiscovery.discover(provider: .openclaw, preferences: preferences)
+        let cliInstalled = discovery.executableExists
+
+        if cliInstalled == false {
+            return TokenmonProviderOnboardingStatus(
+                provider: .openclaw,
+                cliInstalled: false,
+                isConnected: false,
+                isPartial: false,
+                title: TokenmonL10n.string("provider.openclaw.missing.title"),
+                detail: TokenmonL10n.string("provider.openclaw.missing.detail"),
+                actionTitle: nil,
+                executablePath: discovery.executablePath,
+                executableSource: discovery.executableSource,
+                configurationPath: discovery.configurationPath,
+                configurationSource: discovery.configurationSource,
+                usesCustomExecutablePath: discovery.usesCustomExecutablePath,
+                usesCustomConfigurationPath: discovery.usesCustomConfigurationPath,
+                codexMode: nil
+            )
+        }
+
+        return TokenmonProviderOnboardingStatus(
+            provider: .openclaw,
+            cliInstalled: true,
+            isConnected: true,
+            isPartial: false,
+            title: TokenmonL10n.string("provider.openclaw.ready.title"),
+            detail: TokenmonL10n.string("provider.openclaw.ready.detail"),
+            actionTitle: nil,
+            executablePath: discovery.executablePath,
+            executableSource: discovery.executableSource,
+            configurationPath: discovery.configurationPath,
+            configurationSource: discovery.configurationSource,
+            usesCustomExecutablePath: discovery.usesCustomExecutablePath,
+            usesCustomConfigurationPath: discovery.usesCustomConfigurationPath,
+            codexMode: nil
+        )
+    }
+
+    private static func installOpenclaw() -> TokenmonProviderInstallResult {
+        TokenmonProviderInstallResult(
+            provider: .openclaw,
+            message: TokenmonL10n.string("provider.install.openclaw.success")
+        )
     }
 
     private static func inspectGemini(

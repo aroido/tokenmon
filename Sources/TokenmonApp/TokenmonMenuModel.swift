@@ -1152,6 +1152,8 @@ final class TokenmonMenuModel: ObservableObject {
                 settingsMessage = TokenmonL10n.string("settings.feedback.gemini_backfill_unsupported")
             case .cursor:
                 settingsMessage = "Cursor transcript backfill is not supported"
+            case .openclaw:
+                settingsMessage = "OpenClaw transcript backfill is not supported"
             }
             settingsError = nil
             refresh(reason: .manual)

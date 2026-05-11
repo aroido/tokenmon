@@ -2,6 +2,7 @@
 "provider.install.claude.statusline_fallback" = "Existing Claude OTel settings were preserved. Tokenmon will observe Claude usage through the status line.";
 "provider.install.claude.passive_transcript" = "Claude passive transcript monitoring is ready. Tokenmon did not change your Claude status line, hooks, or OTel settings.";
 "provider.install.codex.success" = "Codex observation is automatic. Tokenmon will watch local Codex session files without installing hooks.";
+"provider.install.openclaw.success" = "OpenClaw observation is automatic. Tokenmon will watch local OpenClaw session files without installing hooks.";
 "provider.install.gemini.success" = "Gemini telemetry was configured automatically. Tokenmon will receive live telemetry on 127.0.0.1:4317.";
 "provider.install.gemini.already_configured" = "Gemini telemetry was already configured for Tokenmon.";
 "developer.section.chrome_preview" = "Compatibility Chrome";
@@ -337,6 +338,10 @@
 "provider.claude.missing.custom_path_detail" = "Claude was not found at the custom path. Update the path or switch back to auto detection.";
 "provider.claude.repair.title" = "Claude setup needs repair";
 "provider.claude.repair.action" = "Repair Claude";
+"provider.openclaw.missing.title" = "OpenClaw not detected";
+"provider.openclaw.missing.detail" = "Install OpenClaw or specify a path.";
+"provider.openclaw.ready.title" = "OpenClaw ready";
+"provider.openclaw.ready.detail" = "Tokenmon automatically monitors local OpenClaw sessions.";
 "provider.claude.connected.title" = "Claude connected";
 "provider.claude.connected.detail" = "Status line live gameplay is ready. Dashboard recovery only applies to known transcripts.";
 "provider.claude.connected.detail_passive_transcript" = "Passive transcript monitoring is ready. Tokenmon leaves Claude status line, hooks, and OTel settings unchanged.";

@@ -119,6 +119,8 @@ final class TokenmonAppController {
     private var claudeTranscriptLiveObserver: ClaudeTranscriptLiveObserver?
     private var codexSessionStoreObserver: CodexSessionStoreObserver?
     private var codexSessionsRootPath: String?
+    private var openclawSessionStoreObserver: OpenclawSessionStoreObserver?
+    private var openclawSessionsRootPath: String?
     private var startupTask: Task<Void, Never>?
     private var recoveryTask: Task<Void, Never>?
     private var cursorSyncTask: Task<Void, Never>?
@@ -363,11 +365,34 @@ final class TokenmonAppController {
             observer.startAsync()
             logStartupPhase("codex_session_observer_started", startedAt: phaseStartedAt)
 
+            phaseStartedAt = Date()
+            let openclawDiscovery = TokenmonProviderDiscovery.discover(provider: .openclaw, preferences: preferences)
+            let openclawSessionsRootPath = OpenclawSessionStorageLocator.sessionStorageRootPath(
+                config: OpenclawSessionStorageLocatorConfig(
+                    configurationRootPath: openclawDiscovery.configurationPath
+                )
+            )
+            let openclawObserver = OpenclawSessionStoreObserver(
+                config: OpenclawSessionStoreObserverConfig(
+                    sessionsRootPath: openclawSessionsRootPath,
+                    outputPath: TokenmonDatabaseManager.inboxPath(provider: .openclaw),
+                    onActivityPulse: { [weak self] in
+                        Task { @MainActor [weak self] in
+                            self?.menuModel.recordLiveActivityPulse()
+                        }
+                    }
+                )
+            )
+            openclawObserver.startAsync()
+            logStartupPhase("openclaw_session_observer_started", startedAt: phaseStartedAt)
+
             await MainActor.run {
                 let mainActorPhaseStartedAt = Date()
                 self.claudeTranscriptLiveObserver = claudeObserver
                 self.codexSessionsRootPath = sessionsRootPath
                 self.codexSessionStoreObserver = observer
+                self.openclawSessionsRootPath = openclawSessionsRootPath
+                self.openclawSessionStoreObserver = openclawObserver
 
                 let liveMonitoringStartedAt = Date()
                 self.menuModel.activateLiveMonitoring()
@@ -442,6 +467,19 @@ final class TokenmonAppController {
                         event: "codex_startup_recovery_completed",
                         metadata: [
                             "duration_ms": TokenmonAppBehaviorLogger.durationMillisecondsString(since: recoveryStartedAt),
+                        ],
+                        supportDirectoryPath: supportDirectoryPath
+                    )
+                    let openclawRecoveryStartedAt = Date()
+                    _ = try? OpenclawSessionStoreRecoveryService.run(
+                        databasePath: databasePath,
+                        sessionsRootPath: openclawSessionsRootPath
+                    )
+                    TokenmonAppBehaviorLogger.notice(
+                        category: "recovery",
+                        event: "openclaw_startup_recovery_completed",
+                        metadata: [
+                            "duration_ms": TokenmonAppBehaviorLogger.durationMillisecondsString(since: openclawRecoveryStartedAt),
                         ],
                         supportDirectoryPath: supportDirectoryPath
                     )
@@ -543,6 +581,8 @@ final class TokenmonAppController {
         claudeTranscriptLiveObserver = nil
         codexSessionStoreObserver?.stop()
         codexSessionStoreObserver = nil
+        openclawSessionStoreObserver?.stop()
+        openclawSessionStoreObserver = nil
         clearOnboardingWindow(closeWindow: true)
         if let supervisor = geminiSupervisor {
             Task { @MainActor in

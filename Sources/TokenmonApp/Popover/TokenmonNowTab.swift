@@ -556,6 +556,8 @@ private extension ProviderCode {
             return "Gemini"
         case .cursor:
             return "Cursor"
+        case .openclaw:
+            return "OpenClaw"
         }
     }
 }

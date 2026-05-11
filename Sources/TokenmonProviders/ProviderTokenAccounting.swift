@@ -14,6 +14,8 @@ public enum ProviderAccountingSemantics: String, Sendable {
     case geminiProviderTotal = "gemini_provider_total"
     case cursorExportTotal = "cursor_export_total"
     case cursorComponentFallback = "cursor_component_fallback"
+    case openclawProviderTotal = "openclaw_provider_total"
+    case openclawInputOutputFallback = "openclaw_input_output_fallback"
 }
 
 public struct ProviderAccountingSample: Sendable {
@@ -144,6 +146,25 @@ public enum ProviderTokenAccounting {
             currentOutputTokens: currentOutputTokens,
             confidence: usedExplicitTotal ? .providerReportedTotal : .componentDerivedTotal,
             semantics: usedExplicitTotal ? .cursorExportTotal : .cursorComponentFallback
+        )
+    }
+
+    public static func openclaw(
+        totalInputTokens: Int64,
+        totalOutputTokens: Int64,
+        totalCachedInputTokens: Int64,
+        providerTotalTokens: Int64?
+    ) -> ProviderAccountingSample {
+        let normalizedTotalTokens = providerTotalTokens ?? (totalInputTokens + totalOutputTokens)
+        return ProviderAccountingSample(
+            totalInputTokens: totalInputTokens,
+            totalOutputTokens: totalOutputTokens,
+            totalCachedInputTokens: totalCachedInputTokens,
+            normalizedTotalTokens: normalizedTotalTokens,
+            currentInputTokens: nil,
+            currentOutputTokens: nil,
+            confidence: providerTotalTokens == nil ? .componentDerivedTotal : .providerReportedTotal,
+            semantics: providerTotalTokens == nil ? .openclawInputOutputFallback : .openclawProviderTotal
         )
     }
 }

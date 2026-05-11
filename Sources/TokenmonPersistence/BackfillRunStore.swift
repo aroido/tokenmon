@@ -343,6 +343,8 @@ public enum BackfillRunStore {
             message = "Gemini transcript backfill is unsupported for the current configuration"
         case .cursor:
             message = "Cursor transcript backfill is unsupported for the current configuration"
+        case .openclaw:
+            message = "OpenClaw transcript backfill is unsupported for the current configuration"
         }
 
         try database.execute(
