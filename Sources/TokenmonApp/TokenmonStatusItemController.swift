@@ -466,7 +466,8 @@ final class TokenmonAppController {
                     let recoveryStartedAt = Date()
                     _ = try? CodexSessionStoreRecoveryService.run(
                         databasePath: databasePath,
-                        sessionsRootPath: sessionsRootPath
+                        sessionsRootPath: sessionsRootPath,
+                        config: .startup
                     )
                     TokenmonAppBehaviorLogger.notice(
                         category: "recovery",

@@ -3294,6 +3294,77 @@ struct TokenmonPresentationTests {
     }
 
     @Test
+    func codexSessionStoreStartupRecoverySkipsUnsettledSessionFiles() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let databasePath = directory.appendingPathComponent("tokenmon.sqlite").path
+        let manager = TokenmonDatabaseManager(path: databasePath)
+        try manager.bootstrap()
+        try manager.resetProgress(startedAt: "2000-01-01T00:00:00Z")
+        try manager.markLiveGameplayStarted(at: "2026-04-10T10:29:00Z")
+
+        let sessionsRootPath = directory.appendingPathComponent("codex-home/sessions", isDirectory: true)
+        let settledTranscriptPath = sessionsRootPath
+            .appendingPathComponent("2026/04/10", isDirectory: true)
+            .appendingPathComponent("rollout-2026-04-10T10-20-00-settled-session.jsonl")
+            .path
+        let activeTranscriptPath = sessionsRootPath
+            .appendingPathComponent("2026/04/10", isDirectory: true)
+            .appendingPathComponent("rollout-2026-04-10T10-21-00-active-session.jsonl")
+            .path
+        try FileManager.default.createDirectory(
+            at: settledTranscriptPath.deletingLastPathComponentURL,
+            withIntermediateDirectories: true
+        )
+        try writeTranscriptLines(
+            [
+                codexSessionMetaLine(sessionID: "settled-session"),
+                codexTokenCountLine(
+                    timestamp: "2026-04-10T10:25:00Z",
+                    inputTokens: 1_000,
+                    cachedInputTokens: 100,
+                    outputTokens: 400,
+                    lastInputTokens: 1_000,
+                    lastOutputTokens: 400
+                ),
+            ],
+            to: settledTranscriptPath
+        )
+        try writeTranscriptLines(
+            [
+                codexSessionMetaLine(sessionID: "active-session"),
+                codexTokenCountLine(
+                    timestamp: "2026-04-10T10:26:00Z",
+                    inputTokens: 2_000,
+                    cachedInputTokens: 200,
+                    outputTokens: 800,
+                    lastInputTokens: 2_000,
+                    lastOutputTokens: 800
+                ),
+            ],
+            to: activeTranscriptPath
+        )
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date(timeIntervalSinceNow: -600)],
+            ofItemAtPath: settledTranscriptPath
+        )
+
+        let result = try CodexSessionStoreRecoveryService.run(
+            databasePath: databasePath,
+            sessionsRootPath: sessionsRootPath.path,
+            config: CodexSessionStoreRecoveryConfig(minimumFileAgeSeconds: 120)
+        )
+
+        let summary = try manager.summary()
+        #expect(result.filesScanned == 1)
+        #expect(result.filesRecovered == 1)
+        #expect(result.samplesCreated == 1)
+        #expect(summary.usageSamples == 1)
+        #expect(try manager.tokenUsageTotals().allTimeTokens == 1_400)
+    }
+
+    @Test
     func codexSessionStoreObserverTreatsExistingSessionAsGameplayBaseline() async throws {
         let directory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

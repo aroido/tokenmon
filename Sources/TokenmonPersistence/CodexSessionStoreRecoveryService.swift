@@ -11,10 +11,29 @@ public struct CodexSessionStoreRecoveryResult: Sendable {
     public let errorsCount: Int
 }
 
+public struct CodexSessionStoreRecoveryConfig: Sendable {
+    public static let startup = CodexSessionStoreRecoveryConfig(
+        minimumFileAgeSeconds: 120,
+        maxSessionFiles: 128
+    )
+
+    public let minimumFileAgeSeconds: TimeInterval
+    public let maxSessionFiles: Int?
+
+    public init(
+        minimumFileAgeSeconds: TimeInterval = 0,
+        maxSessionFiles: Int? = nil
+    ) {
+        self.minimumFileAgeSeconds = minimumFileAgeSeconds
+        self.maxSessionFiles = maxSessionFiles
+    }
+}
+
 public enum CodexSessionStoreRecoveryService {
     public static func run(
         databasePath: String,
-        sessionsRootPath: String
+        sessionsRootPath: String,
+        config: CodexSessionStoreRecoveryConfig = CodexSessionStoreRecoveryConfig()
     ) throws -> CodexSessionStoreRecoveryResult {
         guard FileManager.default.fileExists(atPath: sessionsRootPath) else {
             return CodexSessionStoreRecoveryResult(
@@ -37,7 +56,7 @@ public enum CodexSessionStoreRecoveryService {
         var rejectedSamples = 0
         var errorsCount = 0
 
-        for transcriptPath in sessionFiles(rootPath: sessionsRootPath) {
+        for transcriptPath in sessionFiles(rootPath: sessionsRootPath, config: config) {
             filesScanned += 1
 
             do {
@@ -116,7 +135,11 @@ public enum CodexSessionStoreRecoveryService {
         )
     }
 
-    private static func sessionFiles(rootPath: String) -> [String] {
+    private static func sessionFiles(
+        rootPath: String,
+        config: CodexSessionStoreRecoveryConfig,
+        now: Date = Date()
+    ) -> [String] {
         guard let enumerator = FileManager.default.enumerator(
             at: URL(fileURLWithPath: rootPath, isDirectory: true),
             includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
@@ -131,17 +154,28 @@ public enum CodexSessionStoreRecoveryService {
             guard values?.isRegularFile == true, url.pathExtension == "jsonl" else {
                 continue
             }
-            files.append((url.path, values?.contentModificationDate ?? .distantPast))
+            let modifiedAt = values?.contentModificationDate ?? .distantPast
+            if config.minimumFileAgeSeconds > 0,
+               now.timeIntervalSince(modifiedAt) < config.minimumFileAgeSeconds {
+                continue
+            }
+            files.append((url.path, modifiedAt))
         }
 
-        return files
+        let sortedFiles = files
             .sorted { lhs, rhs in
                 if lhs.modifiedAt != rhs.modifiedAt {
-                    return lhs.modifiedAt < rhs.modifiedAt
+                    return lhs.modifiedAt > rhs.modifiedAt
                 }
                 return lhs.path < rhs.path
             }
-            .map(\.path)
+        let limitedFiles: [(path: String, modifiedAt: Date)]
+        if let maxSessionFiles = config.maxSessionFiles {
+            limitedFiles = Array(sortedFiles.prefix(max(0, maxSessionFiles)))
+        } else {
+            limitedFiles = sortedFiles
+        }
+        return limitedFiles.map(\.path)
     }
 
     private static func sourceKey(transcriptPath: String) -> String {
