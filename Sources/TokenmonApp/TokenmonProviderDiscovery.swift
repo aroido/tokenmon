@@ -200,7 +200,10 @@ enum TokenmonProviderDiscovery {
     }
 
     private static func candidateExecutablePaths(named executable: String) -> [String] {
-        let home = resolvedHomeDirectory()
+        candidateExecutablePaths(named: executable, home: resolvedHomeDirectory())
+    }
+
+    static func candidateExecutablePaths(named executable: String, home: URL) -> [String] {
         var paths = Set<String>()
 
         let envPath = ProcessInfo.processInfo.environment["PATH"] ?? ""
@@ -217,6 +220,11 @@ enum TokenmonProviderDiscovery {
             "/usr/bin",
             home.appendingPathComponent("bin", isDirectory: true).path,
             home.appendingPathComponent(".local/bin", isDirectory: true).path,
+            home.appendingPathComponent(".local/share/mise/shims", isDirectory: true).path,
+            home.appendingPathComponent(".asdf/shims", isDirectory: true).path,
+            home.appendingPathComponent(".volta/bin", isDirectory: true).path,
+            home.appendingPathComponent(".bun/bin", isDirectory: true).path,
+            home.appendingPathComponent("Library/pnpm", isDirectory: true).path,
             home.appendingPathComponent(".npm-global/bin", isDirectory: true).path,
             home.appendingPathComponent(".yarn/bin", isDirectory: true).path,
         ]
@@ -228,7 +236,39 @@ enum TokenmonProviderDiscovery {
             paths.insert(candidate)
         }
 
+        for directory in miseNodeBinDirectories(home: home) {
+            let candidate = URL(fileURLWithPath: directory, isDirectory: true)
+                .appendingPathComponent(executable)
+                .path
+            paths.insert(candidate)
+        }
+
         return Array(paths).sorted()
+    }
+
+    static func miseNodeBinDirectories(home: URL) -> [String] {
+        let installsRoot = home.appendingPathComponent(".local/share/mise/installs/node", isDirectory: true).path
+        guard let entries = try? FileManager.default.contentsOfDirectory(atPath: installsRoot) else {
+            return []
+        }
+        return entries
+            .map { (installsRoot as NSString).appendingPathComponent($0) + "/bin" }
+            .filter { FileManager.default.fileExists(atPath: $0) }
+    }
+
+    /// Thread-safe accumulator for `readabilityHandler` callbacks, which fire on
+    /// an arbitrary background queue.
+    private final class ShellLookupBuffer: @unchecked Sendable {
+        private let queue = DispatchQueue(label: "tokenmon.shell-lookup.buffer")
+        private var data = Data()
+
+        func append(_ chunk: Data) {
+            queue.sync { data.append(chunk) }
+        }
+
+        func snapshot() -> Data {
+            queue.sync { data }
+        }
     }
 
     private static func shellLookupPath(for executable: String) -> String? {
@@ -238,34 +278,106 @@ enum TokenmonProviderDiscovery {
             "/bin/bash",
         ].compactMap { $0 }
 
+        // -lc sources login config (.zprofile) but NOT interactive config (.zshrc),
+        // so we avoid executing the user's interactive startup files from a menu bar
+        // app. The static candidate paths above cover the common mise/asdf/volta/bun/
+        // pnpm setups directly; this fallback exists for users whose PATH is set in
+        // .zprofile or other login-time configuration.
         for shell in candidateShells {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: shell)
-            process.arguments = ["-lc", "command -v \(shellEscape(executable))"]
-
-            let outputPipe = Pipe()
-            process.standardOutput = outputPipe
-            process.standardError = Pipe()
-
-            do {
-                try process.run()
-                process.waitUntilExit()
-            } catch {
-                continue
-            }
-
-            guard process.terminationStatus == 0 else {
-                continue
-            }
-
-            let output = String(decoding: outputPipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            if output.hasPrefix("/") {
-                return output
+            let command = "command -v \(shellEscape(executable))"
+            if let path = runShellLookup(
+                shell: shell,
+                args: ["-lc", command],
+                terminateAfter: 2.0,
+                killAfter: 2.5
+            ) {
+                return path
             }
         }
 
         return nil
+    }
+
+    /// Runs a bounded shell subprocess to resolve an executable path.
+    ///
+    /// Hardening:
+    /// - Sends SIGTERM after `terminateAfter` seconds, escalates to SIGKILL after
+    ///   `killAfter` seconds. This prevents a slow or blocking login config from
+    ///   stalling provider discovery indefinitely.
+    /// - Drains stdout/stderr asynchronously via `readabilityHandler` so a noisy
+    ///   `.zprofile` cannot fill the 64KB pipe buffer and block the child on write.
+    /// - Buffer mutation is serialized on a dedicated queue because
+    ///   `readabilityHandler` fires on an arbitrary queue.
+    /// - Limitation: signals are delivered to the shell PID only; children forked
+    ///   from the login config (rare in `.zprofile`) may outlive the shell. The
+    ///   bounded read window + SIGKILL escalation keep the practical impact small.
+    static func runShellLookup(
+        shell: String,
+        args: [String],
+        terminateAfter: TimeInterval,
+        killAfter: TimeInterval
+    ) -> String? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: shell)
+        process.arguments = args
+
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
+
+        let buffer = ShellLookupBuffer()
+        outputPipe.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return }
+            buffer.append(chunk)
+        }
+        errorPipe.fileHandleForReading.readabilityHandler = { handle in
+            // Drain to prevent the child from blocking on stderr writes; discard.
+            _ = handle.availableData
+        }
+
+        do {
+            try process.run()
+        } catch {
+            outputPipe.fileHandleForReading.readabilityHandler = nil
+            errorPipe.fileHandleForReading.readabilityHandler = nil
+            return nil
+        }
+
+        let terminateItem = DispatchWorkItem { [weak process] in
+            guard let process, process.isRunning else { return }
+            process.terminate()
+        }
+        let killItem = DispatchWorkItem { [weak process] in
+            guard let process, process.isRunning else { return }
+            kill(process.processIdentifier, SIGKILL)
+        }
+        DispatchQueue.global().asyncAfter(deadline: .now() + terminateAfter, execute: terminateItem)
+        DispatchQueue.global().asyncAfter(deadline: .now() + killAfter, execute: killItem)
+
+        process.waitUntilExit()
+        terminateItem.cancel()
+        killItem.cancel()
+
+        outputPipe.fileHandleForReading.readabilityHandler = nil
+        errorPipe.fileHandleForReading.readabilityHandler = nil
+        try? outputPipe.fileHandleForReading.close()
+        try? errorPipe.fileHandleForReading.close()
+
+        guard process.terminationStatus == 0,
+              process.terminationReason == .exit else {
+            return nil
+        }
+
+        let snapshot = buffer.snapshot()
+        let output = String(decoding: snapshot, as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        // A noisy login config can emit banners before `command -v` prints its
+        // result, so pick the last absolute-path line rather than trusting the
+        // whole capture.
+        let lines = output.split(separator: "\n").map { String($0).trimmingCharacters(in: .whitespaces) }
+        return lines.reversed().first { $0.hasPrefix("/") }
     }
 
     private static func shellEscape(_ value: String) -> String {
